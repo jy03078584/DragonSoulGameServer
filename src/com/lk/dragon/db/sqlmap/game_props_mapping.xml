@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="gamePropsMap">
+	<typeAlias alias="GameProps" type="com.lk.dragon.db.domain.GameProps" />
+
+
+	<!-- =====================【获取道具列表】============================ -->
+	<select id="getAllPropsList" parameterClass="GameProps" resultClass="GameProps">
+	    <![CDATA[SELECT props_id,props_name,props_icon,props_type,props_comment FROM game_props_tab ]]>
+	    <dynamic prepend="WHERE">
+	        <isNotEmpty prepend="and" property="props_id">
+	            <![CDATA[props_id = #props_id#]]>
+	        </isNotEmpty>
+	    </dynamic>
+	</select>
+	
+	<!-- =====================【获取道具信息】============================ -->
+	<select id="getPropsInfo" parameterClass="java.lang.Long" resultClass="GameProps">
+	    <![CDATA[SELECT t.props_id,t.props_name,t.props_icon,t.props_type,t.props_comment FROM sod.game_props_tab t where t.props_id =#props_id#]]>
+	</select>
+	
+</sqlMap>

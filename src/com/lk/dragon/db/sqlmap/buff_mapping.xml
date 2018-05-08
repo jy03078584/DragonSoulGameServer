@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="buffMap">
+	<typeAlias alias="Buff" type="com.lk.dragon.db.domain.Buff" />
+
+	
+	<!-- =====================【BUFF时间结束】============================ -->
+	<delete id="deleteBuff" parameterClass="Buff">
+		<![CDATA[DELETE FROM sod.buff_used_tab t WHERE t.buff_id = #buff_id# and t.target_id = #target_id#]]>
+	</delete>
+	
+	<!-- =====================【角色获得BUFF】============================ -->
+	<insert id="insertNewBuff" parameterClass="Buff">
+		<![CDATA[insert into sod.buff_used_tab values
+							  (#buff_id#,
+							   #target_id#,
+							   to_char(sysdate + (select t.buff_time from sod.buff_tab t where t.buff_id = #buff_id#),'yyyy-mm-dd hh24:mi:ss'))
+		]]>
+	</insert>
+	
+	
+	<!-- =====================【查看目标对象BUFF信息】============================ -->
+	<select id="getBuffInfo" parameterClass="Buff" resultClass="Buff">
+	    <![CDATA[     select t1.buff_id,
+				             t1.buff_name,
+				             t1.buff_desc,
+				             t1.buff_type,
+				             t1.buff_icon,
+				             to_number(to_date(t.last_time, 'yyyy-mm-dd hh24:mi:ss') -
+				                       sysdate) * 24 * 60 * 60 lastSecond
+				        from sod.buff_used_tab t
+				        join sod.buff_tab t1
+				          on t.buff_id = t1.buff_id
+				       where t.target_id = #target_id#]]>
+				       <isNotEmpty property="buff_id" prepend="and">
+				           <![CDATA[ t1.buff_id = #buff_id#]]>
+				       </isNotEmpty>
+				      <isNotEmpty property="buff_type" prepend="and">
+				           <![CDATA[ t1.buff_type = #buff_type#]]>
+				       </isNotEmpty>
+	</select>
+	
+	<!-- =====================【查看目标对象当前是否处于该BUFF效果内】============================ -->
+	<select id="checkTagInBuff" parameterClass="Buff" resultClass="java.lang.Integer">
+	    <![CDATA[  select count(1) from sod.buff_used_tab t where t.buff_id = #buff_id# and t.target_id = #target_id#]]>
+	</select>
+</sqlMap>

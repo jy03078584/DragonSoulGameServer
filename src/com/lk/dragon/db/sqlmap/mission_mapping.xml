@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="missionMap">
+	<typeAlias alias="Mission" type="com.lk.dragon.db.domain.Mission" />
+	<typeAlias alias="MissionCondition" type="com.lk.dragon.db.domain.MissionCondition" />
+	<typeAlias alias="RoleProps" type="com.lk.dragon.db.domain.RoleProps" />
+
+	<resultMap id="missionDetailInfoMap" class="Mission">
+		<result property="mission_id" column="mission_id" />
+		<result property="mission_type" column="mission_type" />
+		<result property="role_id" column="role_id" />
+		<!-- <result property="curr" column="curr" />
+		<result property="need" column="need" /> -->
+		<result property="exp" column="exp" />
+		<result property="mission_name" column="mission_name" />
+		<result property="mission_desc" column="mission_desc" />
+		<result property="missionConditions" column="{mission_id = mission_id,role_id = role_id}"
+			select="missionMap.getMissionCondition" />
+		<result property="taskGifts" column="mission_id" select="missionMap.getMissionRewardInfo" />
+	</resultMap>
+	<!-- =====================【查询任务完成条件】============================ -->
+	<select id="getMissionCondition" resultClass="MissionCondition" parameterClass="Mission">
+	    <![CDATA[select t.condition_key,t.condition_id,t.condition_type,t.condition_val,t.condition_desc,(select t1.curr
+          from sod.role_mission_tab t1
+         where t1.mission_id = t.mission_id
+           and t1.condition_id = t.condition_id
+           and t1.role_id = #role_id#) curr from sod.MISSION_CONDITION_TAB t where t.mission_id = #mission_id#]]>
+	</select>
+	<!-- =====================【查询任务完成奖励信息】============================ -->
+	<select id="getMissionRewardInfo" parameterClass="java.lang.Integer"
+		resultClass="RoleProps">
+	    <![CDATA[select t1.props_id,t1.props_name,t1.props_icon,t.PROP_COUNT props_count,t1.props_type  from sod.MISSION_GIFT_TAB t join sod.game_props_tab t1 on t.prop_id = t1.props_id where t.mission_id = #value#]]>
+	</select>
+	<!-- =====================【查询当前角色执行中的任务信息】============================ -->
+	<select id="getMissionDetailByRoleId" parameterClass="Mission"
+		resultMap="missionDetailInfoMap">
+	    <![CDATA[select    #role_id# role_id,
+					       t1.mission_id,
+					       t1.mission_type,
+					       t1.mission_name,
+					       t1.mission_desc,
+					       t1.exp
+					  from sod.mission_tab t1 ]]>
+					 <dynamic prepend="where">
+					     <isNotEmpty property="role_id" prepend="and">
+					        
+					         t1.mission_id in (select unique(t2.mission_id) mission_id
+                          from sod.role_mission_tab t2
+                         where t2.role_id = #role_id#)
+					     </isNotEmpty>
+					      <isNotEmpty property="mission_id" prepend="and">
+					         t1.mission_id = #mission_id#
+					     </isNotEmpty>
+					 </dynamic>
+	</select>
+
+	<!-- =====================【更改任务进度】============================ -->
+	<update id="updateRoleMission" parameterClass="Mission">
+		<![CDATA[UPDATE sod.role_mission_tab t SET t.curr = t.curr + #incCount# WHERE t.mission_id = #mission_id# and t.role_id = #role_id# and t.condition_id = #condition_id#]]>
+	</update>
+	
+	<!-- =====================【删除任务:任务完成、放弃任务】============================ -->
+	<delete id="deleteRoleMission" parameterClass="Mission">
+		<![CDATA[DELETE FROM sod.role_mission_tab t WHERE t.mission_id = #mission_id# and t.role_id = #role_id#]]>
+	</delete>
+	
+	<!-- =====================【角色接取新任务】============================ -->
+	<insert id="insertRoleMission" parameterClass="Mission">
+		<![CDATA[insert into sod.role_mission_tab
+					  (condition_id, role_id, mission_id, need)
+					  select t.condition_id, #role_id#, #mission_id#, t.condition_val
+					    from sod.mission_condition_tab t
+					   where t.mission_id = #mission_id#]]>
+	</insert>
+	
+	<!-- =====================【重置日常任务】============================ -->
+	<select id="getRandomDayTaskId" parameterClass="java.lang.Integer" resultClass="java.lang.Integer">
+	    <![CDATA[select mission_id
+					  from (select t.mission_id
+					          from sod.mission_tab t
+					         where t.mission_type = 2
+					           and t.minlev < = #role_lev#
+					           and t.maxlev >= #role_lev#
+					         order by dbms_random.value)
+					 where rownum = 1]]>
+	</select>
+	
+	<!-- =====================【查询后续任务ID】============================ -->
+	<select id="getNextMissionId" resultClass="java.lang.Integer">
+	    <![CDATA[select mission_id from sod.mission_tab t where t.head = #head#]]>
+	</select>
+</sqlMap>

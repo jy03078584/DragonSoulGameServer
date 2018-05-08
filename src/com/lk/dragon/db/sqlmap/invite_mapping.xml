@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="inviteMap">
+	<typeAlias alias="Invite" type="com.lk.dragon.db.domain.Invite" />
+	<typeAlias alias="InviteReward" type="com.lk.dragon.db.domain.InviteReward" />
+	<typeAlias alias="InviteRole" type="com.lk.dragon.db.domain.InviteRole" />
+	<typeAlias alias="RoleProps" type="com.lk.dragon.db.domain.RoleProps" />
+	<typeAlias alias="RoleInvite" type="com.lk.dragon.db.domain.RoleInvite" />
+
+	<!-- =====================【生成邀请码时，绑定入库】============================ -->
+	<insert id="createInviteCode" parameterClass="Invite">
+		<selectKey resultClass="java.lang.Long" keyProperty="invite_id">
+			<![CDATA[select invite_seq.nextval as invite_id from dual]]>
+		</selectKey>
+		<![CDATA[INSERT INTO invite_tbl(invite_id,role_id,invite_code)VALUES(#invite_id#,#role_id#,#invite_code#)]]>
+	</insert>
+	
+	<!-- =====================【查找邀请码，用来验证是否重复】============================ -->
+	<select id="getCode" parameterClass="java.lang.String" resultClass="java.lang.Integer">
+	    <![CDATA[  SELECT count(1) FROM sod.invite_tbl t WHERE t.invite_code = #code#]]>
+	</select>
+	
+	
+	<!-- =====================【验证角色是否拥有邀请码】============================ -->
+	<select id="getRoleHasCode" parameterClass="java.lang.Long" resultClass="java.lang.Integer">
+	    <![CDATA[  SELECT count(1) FROM sod.invite_tbl t WHERE t.role_id = #role_id#]]>
+	</select>
+
+	<!-- =====================【查询奖励】============================ -->
+	<select id="getReward" parameterClass="java.lang.Integer" resultClass="InviteReward">
+	    <![CDATA[  select * from sod.invite_reward_tbl t where t.reward_id = #reward_id#]]>
+	</select>
+
+	<!-- =====================【查询个人奖励领取情况等信息】============================ -->
+	<select id="getInvite" parameterClass="java.lang.Long" resultClass="Invite">
+	    <![CDATA[  select * from sod.invite_tbl t where t.role_id = #role_id#]]>
+	</select>
+
+	<!-- =====================【查询】============================ -->
+	<select id="getInviteRole" parameterClass="java.lang.Long" resultClass="InviteRole">
+	    <![CDATA[  select t2.role_name,t2.lev,t2.sex,t2.icon,t2.role_id
+	   		 from sod.invite_role_tab t1, sod.role_tab t2 
+	    	where t1.invite_id = #role_id# and t1.invited_role_id=t2.role_id]]>
+	</select>
+	
+	<!-- =====================【查找账号是否已被绑定】============================ -->
+	<select id="getIsBind" parameterClass="java.lang.Long" resultClass="java.lang.Integer">
+	    <![CDATA[  SELECT count(1) FROM sod.invite_role_tab t where t.invited_role_id = #role_id#]]>
+	</select>
+	
+	<!-- =====================【根据邀请码，查找邀请码所属人id】============================ -->
+	<select id="getRoleIdByCode" parameterClass="java.lang.String" resultClass="java.lang.Long">
+	    <![CDATA[  select t.role_id  from sod.invite_tbl t where t.invite_code = #code#]]>
+	</select>
+	
+	<!-- =====================【邀请码绑定】============================ -->
+	<insert id="createBind" parameterClass="InviteRole">
+		<![CDATA[INSERT INTO invite_role_tab(invite_id,invited_role_id)VALUES(#invite_id#,#invite_role_id#)]]>
+	</insert>
+	
+	<!-- =====================【更新邀请人奖励领取资格】============================ -->
+	<insert id="updateRewardCanGet" parameterClass="Invite">
+		<![CDATA[update sod.invite_tbl t set t.reward=#reward# where t.role_id=#role_id#]]>
+	</insert>
+	
+	
+	<!-- =====================【查找邀请人id】============================ -->
+	<select id="getInviteId" parameterClass="java.lang.Long" resultClass="java.lang.Long">
+	    <![CDATA[ select invite_id from  sod.invite_role_tab t where t.invited_role_id=#role_id#]]>
+	</select>
+	
+	<!-- =====================【查找超过某个等级的人数】============================ -->
+	<select id="getOverLevCount" parameterClass="java.util.Map" resultClass="java.lang.Integer">
+	    <![CDATA[ select count(1) from 
+	    	sod.invite_role_tab t1,sod.role_tab t2 
+	    	where t1.invite_id=#role_id#
+	    	and t1.invite_id=t2.role_id 
+	    	and t2.lev>#lev#]]>
+	</select>
+	
+	
+	<resultMap id="inviteRewardInfoMap" class="InviteReward">   
+	  <result property="info_id" column="info_id"/>   
+	  <result property="info_desc" column="info_desc"/> 
+	  <result property="propList" column="info_id" select="inviteMap.getRewardDetInfo"/>   
+   </resultMap>
+   
+	<!-- =====================【查找邀请任务奖励列表】============================ -->
+	<select id="getInviteRewardInfo"   resultMap="inviteRewardInfoMap">
+	    <![CDATA[ select t.info_id, t.info_desc from sod.invite_info_tab t]]>
+	</select>
+	
+	<!-- =====================【查找邀请任务奖励详情】============================ -->
+	<select id="getRewardDetInfo" parameterClass="java.lang.Integer" resultClass="RoleProps">
+	    <![CDATA[ select t.prop_count props_count,t.prop_id props_id,
+					       (select t1.props_icon from sod.game_props_tab t1 where t1.props_id = t.prop_id) props_icon
+					  from sod.invite_gift_tab t
+					 where t.invite_info_id = #value#]]>
+	</select>
+	
+	<!-- =====================【查询个人邀请奖励领取状况】============================ -->
+	<select id="getInviteRewardInfoMySelf" parameterClass="RoleInvite" resultClass="RoleInvite">
+	    <![CDATA[ select t.role_id,t.invite_info_id,t.is_get from sod.role_invite_tab t ]]>
+	    <dynamic prepend="where">
+	        <isNotEmpty property="role_id" prepend="and">
+	            t.role_id = #role_id#
+	        </isNotEmpty>
+	        <isNotEmpty property="invite_info_id" prepend="and">
+	            t.invite_info_id = #invite_info_id#
+	        </isNotEmpty>
+	    </dynamic>
+	</select>
+	
+	
+	<!-- =====================【根据任务ID查询奖励详情】============================ -->
+	<select id="getInviteRewardInfoById"  parameterClass="java.lang.Integer" resultClass="RoleProps">
+	    <![CDATA[ select t.prop_id props_id,t.prop_count props_count,(select t1.props_type from sod.game_props_tab t1 where t.prop_id = t1.props_id)props_type from sod.invite_gift_tab t where t.invite_info_id =#invite_info_id# ]]>
+	</select>
+	
+	<!-- =====================【更改奖励领取状态】============================ -->
+		<update id="updateInviteStatus" parameterClass="RoleInvite">
+		<![CDATA[UPDATE sod.role_invite_tab t SET t.is_get = 1 where t.role_id=#role_id# and t.invite_info_id = #invite_info_id#]]>
+	</update>
+</sqlMap>

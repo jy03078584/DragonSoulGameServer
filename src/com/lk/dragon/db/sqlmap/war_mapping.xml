@@ -1,0 +1,729 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="warMap">
+	<typeAlias alias="ArmsDeploy" type="com.lk.dragon.db.domain.ArmsDeploy" />
+	<typeAlias alias="RoleHero" type="com.lk.dragon.db.domain.RoleHero" />
+	<typeAlias alias="WarProduce" type="com.lk.dragon.db.domain.WarProduce" />
+	<typeAlias alias="ReinForceArm" type="com.lk.dragon.db.domain.ReinForceArm" />
+	
+	
+	
+	
+	 <resultMap id="teamDetailInfo" class="WarProduce">   
+	  <result property="war_team_id" column="war_team_id"/>   
+	  <result property="city_id" column="city_id"/>
+	  <result property="role_id" column="role_id"/>    
+	  <result property="tag_name" column="tag_name"/>   
+	  <result property="status" column="status"/> 
+	  <result property="end_time" column="end_time"/>   
+	  <result property="tag_x" column="tag_x"/>   
+	  <result property="tag_y" column="tag_y"/>   
+	  <result property="use_time" column="use_time"/>
+	  <result property="war_type" column="war_type"/>   
+	  <result property="tag_city_id" column="tag_city_id"/>   
+	  <result property="heros" column="war_team_id" select="warMap.getHerosInfoByTeamId"/>   
+   </resultMap>
+   <resultMap id="heroDetailInTeamInfo" class="RoleHero">   
+	  <result property="role_hero_id" column="role_hero_id"/>   
+	  <result property="physique" column="physique"/>  
+	  <result property="mentality" column="mentality"/>  
+	  <result property="mp" column="mp"/>   
+	  <result property="hero_power" column="hero_power"/>   
+	  <result property="endurance" column="endurance"/>   
+	  <result property="agility" column="agility"/>   
+	  <result property="physic_attack" column="physic_attack"/>   
+	  <result property="physic_defence" column="physic_defence"/>   
+	  <result property="magic_attack" column="magic_attack"/>   
+	  <result property="magic_defence" column="magic_defence"/>   
+	  <result property="hp" column="hp"/>   
+	  <result property="mp" column="mp"/>
+	  <result property="hero_lev" column="hero_lev"/> 
+	  <result property="hero_exp" column="hero_exp"/> 
+	  <result property="hero_up_exp" column="hero_up_exp"/> 
+	  <result property="speed" column="speed"/>   
+	  <result property="distance_attack" column="distance_attack"/>   
+	  <result property="distance_move" column="distance_move"/>   
+	  <result property="hero_name" column="hero_name"/>   
+	  <result property="hero_lev" column="hero_lev"/>   
+	  <result property="is_free" column="is_free"/>   
+	  <result property="command" column="command"/>   
+	  <result property="max_hp" column="max_hp"/>   
+	  <result property="max_mp" column="max_mp"/>   
+	  <result property="sht_icon" column="sht_icon"/>   
+	  <result property="city_id" column="city_id"/>   
+	  <result property="now_cityid" column="now_cityid"/>   
+	  <result property="role_id" column="role_id"/>   
+	  <result property="heroArmys" column="role_hero_id" select="warMap.getArmsInfoByHeroId"/>   
+   </resultMap>
+
+	<!-- *****************************************【军队整备】***************************************** -->
+	
+	
+	<!-- =====================【获取数据库时间】============================ -->
+	<select id="getArriveTimeDb" resultClass="java.lang.String" parameterClass="java.lang.Integer">
+	    <![CDATA[SELECT to_char(SYSDATE+numtodsinterval(#use_time#,'second'),'yyyy-mm-dd hh24:mi:ss') FROM dual]]>
+	</select>
+	
+		<!-- =====================【根据armID查询Arm信息】============================ -->
+		<select id="getArmInfoByArmId" parameterClass="java.lang.Integer" resultClass="ArmsDeploy">
+	    <![CDATA[
+			select     t.arm_id,
+				       t.grade,
+				       t.arm_name,
+				       t.arm_icon,
+				       t.hp,
+				       t.physic_attack,
+				       t.physic_defence,
+				       t.magic_attack,
+				       t.magic_defence,
+				       t.speed,
+				       t.distance_attack,
+				       t.use_command,
+				       t.hire_privce,
+				       t.hire_time,
+				       t.exp,
+				       t.arm_desc,
+				       t.fc,
+				       t.race,
+				       t.hire_build
+				  from sod.arms_tab t where t.arm_id = #arm_id#
+	    ]]>
+	</select>
+		
+	<!-- =====================【查看当前军事建筑类型】============================ -->
+	<select id="getArmsBuildInfo" resultClass="ArmsDeploy" parameterClass="java.util.Map">
+	    <![CDATA[SELECT t.arm_id,t.grade,t.arm_name,t.arm_icon,t.hp,t.physic_attack,t.physic_defence,t.magic_attack,t.magic_defence,t.speed,t.distance_attack,t.use_command,t.hire_privce,t.hire_time,t.exp,t.arm_desc,t.fc from sod.arms_tab t where t.race=#race# and t.hire_build=#hire_build#]]>
+	</select>
+	
+	<!-- =====================【查看全部兵种信息】============================ -->
+	<select id="getAllArmsInfo" resultClass="ArmsDeploy">
+	    <![CDATA[
+				select t.arm_id,
+				       t.grade,
+				       t.arm_name,
+				       t.arm_icon,
+				       t.hp,
+				       t.physic_attack,
+				       t.physic_defence,
+				       t.magic_attack,
+				       t.magic_defence,
+				       t.speed,
+				       t.distance_attack,
+				       t.use_command,
+				       t.hire_privce,
+				       t.hire_time,
+				       t.exp,
+				       t.arm_desc,
+				       t.fc,
+				       t.race,
+				       t.hire_build
+				  from sod.arms_tab t
+	    ]]>
+	</select>
+	
+	
+	<!-- =====================【创建征兵队列】============================ -->
+	<insert id="createConscriptTeam" parameterClass="java.util.Map">
+		<selectKey resultClass="java.lang.Long" keyProperty="conscript_work_id">
+			SELECT CONSCRIPT_WORK_SEQ.NEXTVAL AS conscript_work_id FROM DUAL
+		</selectKey> 
+	    <![CDATA[INSERT INTO sod.conscript_work_tab(conscript_work_id,city_id,arms_id,end_time,last_seconds,hire_time,eat,city_build_id)
+	    		 VALUES(#conscript_work_id#,#city_id#,#arms_id#,to_char(sysdate+numtodsinterval(#use_time#,'second') ,'yyyy-mm-dd hh24:mi:ss'),#use_time#,#hire_time#,#add_eat#,#city_build_id#)]]>
+	</insert>
+
+	<!-- =====================【征兵队列结束 删除队列数据】============================ -->
+	<delete id="deleteConScript" parameterClass="java.util.Map">
+	    <![CDATA[DELETE FROM sod.conscript_work_tab t WHERE t.city_id = #city_id# AND t.arms_id = #arms_id#]]>
+	</delete>
+
+	<!-- =====================【查看征兵队列是否结束】============================ -->
+	<select id="findConScriptIsEnd" resultClass="java.lang.Integer"
+		parameterClass="java.lang.String">
+	    <![CDATA[SELECT floor(to_number(sysdate-to_date((SELECT t.end_time FROM sod.conscript_work_tab t $condition$),'yyyy-mm-dd hh24:mi:ss') )*24*60*60) as spanSeconds FROM dual]]>
+	</select>
+
+	<!-- =====================【更改征兵队列信息】============================ -->
+	<update id="updateConScriptTime" parameterClass="java.util.Map">
+	    <![CDATA[ UPDATE sod.conscript_work_tab t SET $condition$ WHERE t.city_id = #city_id# AND t.arms_id = #arms_id#]]>
+	</update>
+
+	<!-- =====================【查看角色所有队列信息】============================ -->
+	<select id="selectConScriptByRoleId" parameterClass="java.lang.Long"
+		resultClass="ArmsDeploy">
+	    <![CDATA[SELECT t.city_id,t.arms_id,t.conscript_work_id,t.hire_time,t.last_seconds,t.eat,t.city_build_id,t.extra_seconds,
+	    (SELECT floor(to_number(to_date(t.end_time,'yyyy-mm-dd hh24:mi:ss') - sysdate )*24*60*60) FROM dual)AS isEnd FROM sod.conscript_work_tab t WHERE t.city_id in (SELECT t2.city_id FROM sod.city_tab t2 WHERE role_id = #role_id#)]]>
+	</select>
+
+	<!-- =====================【调用Oracle函数插入数据：征兵/传送到达新城邦】============================ -->
+	<parameterMap class="java.util.Map" id="callProductArmsParams">
+
+		<parameter property="res" jdbcType="INTEGER" javaType="java.lang.Integer"
+			mode="OUT" />
+		<parameter property="city_id_param" jdbcType="INTEGER"
+			javaType="java.lang.Long" mode="IN" />
+		<parameter property="arm_id_param" jdbcType="INTEGER"
+			javaType="java.lang.Integer" mode="IN" />
+		<parameter property="arm_count_param" jdbcType="INTEGER"
+			javaType="java.lang.Integer" mode="IN" />
+
+	</parameterMap>
+	<procedure id="callProductArms" parameterMap="callProductArmsParams">
+	    <![CDATA[{? = call product_arms_fun(?,?,?)} ]]>
+	</procedure>
+
+
+	<!-- =====================【城邦预备部队总览】============================ -->
+	<select id="selectCityArmsInfo" parameterClass="java.lang.String" resultClass="ArmsDeploy">
+	    <![CDATA[select    t.arm_id,
+					       t1.arm_icon as arm_icon,
+					       t1.arm_name as arm_name,
+					       t1.fc as fc,
+					       t1.use_command as use_command,
+					       t1.grade,
+					       t.arm_count
+					  from sod.city_arms_tab t
+					  join sod.arms_tab t1
+					    on t.arm_id = t1.arm_id  $condition$]]>
+	</select>
+
+		<!-- =====================【城邦预备部队信息-征服战】============================ -->
+	<select id="selectCityArmsInfoProduce" parameterClass="java.lang.Long" resultClass="ArmsDeploy">
+	  <![CDATA[select t.arm_id,
+       t.arm_icon,
+       t.arm_name,
+       t.physic_attack,
+       t.physic_defence,
+       t.magic_attack,
+       t.magic_defence,
+       t.hp,
+       t.exp,
+       t.grade,
+       t.speed,
+       (select c.arm_count from sod.city_arms_tab c where c.arm_id = t.arm_id and c.city_id = #city_id#) arm_count
+  from sod.arms_tab t
+ where t.arm_id in (select c.arm_id from sod.city_arms_tab c where c.city_id = #city_id#) order by t.arm_id]]>
+	</select>
+
+
+	<!-- =====================【英雄-部队状态总览】============================ -->
+	<select id="selectHeroArmsStatus" parameterClass="java.lang.String" resultClass="RoleHero">
+	    <![CDATA[ select t.role_hero_id,
+				        t.hero_name,
+				        t.command,
+				        t.icon,
+				        (select t1.name from sod.city_tab t1 where t.city_id = t1.city_id) city_name
+				   from sod.role_hero_tab t
+				  where $condition$ and t.is_free <> 3]]>
+
+	</select>
+
+	<resultMap id="reinForceMap" class="ReinForceArm">
+		<result property="toCityId" column="toCityId" />
+		<result property="toCityName" column="toCityName" />
+		<result property="fromCityId" column="fromCityId" />
+		<result property="fromCityName" column="fromCityName" />
+		<result property="role_hero_id" column="role_hero_id" />
+		<result property="hero_name" column="hero_name" />
+		<result property="sht_icon" column="sht_icon" />
+		<result property="command" column="command" />
+		<result property="heroArms" column="role_hero_id" select="warMap.selectHeroArmsDetail" />
+	</resultMap>
+   	<!-- =====================【获取增援部队详情】============================ -->
+	<select id="selectReinForceArm" parameterClass="java.lang.Long" resultMap="reinForceMap">
+	    <![CDATA[ 
+	    		select t.now_cityid toCityId,
+				       (select t2.name from sod.city_tab t2 where t2.city_id = t.now_cityid) toCityName,
+				       t.city_id fromCityId,
+				       (select t2.name from sod.city_tab t2 where t2.city_id = t.city_id) fromCityName,
+				       t.role_hero_id,
+				       t.hero_name,
+				       t.sht_icon,
+				       t.command
+				  from sod.role_hero_tab t
+				 where t.now_cityid in
+				       (select t1.city_id from sod.city_tab t1 where t1.role_id = #role_id#)
+				   and t.is_free = 4 order by t.now_cityid
+	    ]]>
+
+	</select>
+	<!-- ================================= 【查询英雄所率领的部队】 ===================== -->
+	<select id="selectHeroArmsDetail" parameterClass="java.lang.Long"
+		resultClass="ArmsDeploy">
+		<![CDATA[select    t.hero_arms_id,
+					       t.arm_id,
+					       t.role_hero_id,
+					       t.count,
+					       t.seq_number,
+					       t2.arm_icon    as arm_icon,
+					       t2.arm_name    as arm_name,
+					       t2.fc          as fc,
+					       t2.use_command as use_command
+					  from sod.hero_arms_tab t
+					  join sod.arms_tab t2
+					    on t.arm_id = t2.arm_id
+					 where t.role_hero_id = #role_hero_id#
+					   and t.arm_id <> 0
+					 order by t.seq_number asc]]>
+	</select>
+	<!-- ================================= 【检查英雄当前是否配备有部队】 ===================== -->
+	<select id="checkHeroHasArmsNow" parameterClass="java.lang.Long" resultClass="java.lang.Integer">
+		<![CDATA[select count(1) from sod.hero_arms_tab t where t.role_hero_id = #role_hero_id# and t.count > 0 ]]>
+	</select>
+	
+	
+<!-- ================================= 【查询英雄所率领的部队详细信息】  ===================== -->
+<select id="selectHeroArmsInfoProduce" parameterClass="java.lang.Long" resultClass="ArmsDeploy">
+<![CDATA[select t.arm_id,
+       t.arm_icon,
+       t.arm_name,
+       t.physic_attack,
+       t.physic_defence,
+       t.magic_attack,
+       t.magic_defence,
+       t.hp,
+       t.exp,
+       t.speed,
+       t2.count as arm_count,
+       t2.hero_arms_id
+  from sod.arms_tab t
+  join sod.hero_arms_tab t2
+    on t2.arm_id = t.arm_id
+ where t2.role_hero_id = #role_hero_id#
+ order by hero_arms_id]]>
+ </select>
+ 
+ 
+ <!-- ================================= 【查询战后英雄部队详细信息】  ===================== -->
+<select id="selectHeroArmsInfoWarEnd" parameterClass="java.lang.Long" resultClass="ArmsDeploy">
+<![CDATA[select t.arm_icon,
+       t.arm_name,
+       t.exp,
+       (select h.count from sod.hero_arms_tab h where h.role_hero_id = #role_hero_id# and h.arm_id = t.arm_id) arm_count,
+ 	   (select h.hero_arms_id from sod.hero_arms_tab h where h.role_hero_id = #role_hero_id# and h.arm_id = t.arm_id) hero_arms_id
+  from sod.arms_tab t
+ where t.arm_id in (select h.arm_id from sod.hero_arms_tab h where h.role_hero_id = #role_hero_id# and h.arm_id <> 0) order by hero_arms_id]]>
+ </select>
+ 
+ 
+
+	<!-- =====================【更改英雄-部队信息】============================ -->
+	<update id="updateHeroArmsStatus" parameterClass="ArmsDeploy">
+	    <![CDATA[UPDATE sod.hero_arms_tab t SET t.arm_id = #arm_id#,
+	    										t.count = #count# WHERE t.role_hero_id = #role_hero_id# 
+	    										and t.seq_number = #seq_number#]]>
+	</update>
+
+	<!-- =====================【更改城邦-部队信息】============================ -->
+	<delete id="deleteCityArms" parameterClass="java.lang.Long">
+	    <![CDATA[DELETE FROM sod.city_arms_tab t WHERE t.city_id = #city_id#]]>
+	</delete>
+
+	<insert id="insertCityArms" parameterClass="ArmsDeploy">
+   		<![CDATA[INSERT INTO sod.city_arms_tab(city_id,arm_id,arm_count) VALUES (#city_id#,#arm_id#,#arm_count#)]]>
+	</insert>
+
+	<!-- =====================【战斗后更改英雄部队信息 V2】============================ -->
+	<update id="updateHeroArms" parameterClass="java.lang.String">
+	    <![CDATA[UPDATE sod.hero_arms_tab t SET $condition$ ]]>
+	</update>
+	
+	<!-- =====================【战斗后更改城邦预备部队信息 V2】============================ -->
+	<update id="updateCityArmsWarEnd" parameterClass="java.lang.String">
+	    <![CDATA[UPDATE sod.city_arms_tab t SET $condition$ ]]>
+	</update>
+
+	<!-- *****************************************【战斗过程】***************************************** -->
+	
+	<!-- =====================【查看部队总统帅】============================ -->
+	<select id="selectTotalCommand" resultClass="java.lang.Integer" parameterClass="java.lang.Long">
+	    <![CDATA[
+			select nvl(sum(t.command),0)totalCommand
+			  from sod.role_hero_tab t
+			 where t.role_hero_id in (select t1.role_hero_id
+			                            from sod.team_hero_tab t1
+			                           where t1.team_id = #team_id#)
+	    ]]>
+	</select>
+	
+	<!-- =====================【查看资源点当前信息】============================ -->
+	<select id="selectWildSrcInfo" resultClass="WarProduce" parameterClass="java.lang.String">
+	    <![CDATA[select t.arm_info, t.owner_id, t.owner_type, t.src_type,t.src_leve from sod.wild_src_tab t $condition$]]>
+	</select>
+	
+	
+		<!-- =====================【修改野外资源点游信息】============================ -->
+	<update id="updateWildSrcOwner" parameterClass="java.util.Map">
+		<![CDATA[UPDATE sod.wild_src_tab t SET t.owner_type = 2,t.owner_id = #owner_id#,t.arm_info = #arm_info# WHERE t.tag_x = #tag_x# AND t.tag_y = #tag_y#]]>
+	</update>
+	
+	
+	
+	
+		
+	<!-- =====================【获取watTeamSeql】============================ -->
+	<select id="getWarTeamSeq" resultClass="java.lang.Long">
+	    <![CDATA[
+			SELECT WAR_TEAM_SEQ.NEXTVAL AS war_team_id FROM DUAL
+	    ]]>
+	</select>
+	
+	<!-- =====================【选定出征部队 构建出征队列】============================ -->
+	<insert id="createWarTeam" parameterClass="WarProduce">
+<!-- 		<selectKey resultClass="java.lang.Long" keyProperty="war_team_id">
+			SELECT WAR_TEAM_SEQ.NEXTVAL AS war_team_id FROM DUAL
+		</selectKey>  -->
+	    <![CDATA[INSERT INTO sod.war_team_tab(war_team_id,city_id,role_id,status,end_time,tag_name,tag_x,tag_y,tag_arms,use_time,war_type,tag_city_id)
+	    		 VALUES(#war_team_id#,#city_id#,#role_id#,#status#,#end_time#,#tag_name#,#tag_x#,#tag_y#,#tag_arms#,#use_time#,#war_type#,#tag_city_id#)]]>
+	</insert>
+
+	<insert id="insertTeamHero" parameterClass="java.util.Map">
+	    <![CDATA[INSERT INTO sod.team_hero_tab(team_id,role_hero_id) VALUES(#team_id#,#role_hero_id#)]]>
+	</insert>
+	
+	<!-- =====================【查看队列信息】============================ -->
+	<select id="selectWarTeamById" resultMap="teamDetailInfo" parameterClass="java.lang.Long">
+	    <![CDATA[SELECT t.war_team_id,
+	    				t.city_id,
+	    				t.role_id,
+	    				t.status,
+	    				t.end_time,
+	    				t.tag_name,
+	    				t.tag_x,
+	    				t.tag_y,
+	    				t.tag_arms,
+	    				t.use_time,
+	    				t.war_type,
+	    				t.tag_city_id
+  			FROM sod.war_team_tab t where t.war_team_id = #war_team_id#]]>
+	</select>
+	
+	
+	
+ 
+   <!-- =====================【获取队列中英雄所辖部队基本信息】============================ -->
+	 <select id="getArmsInfoByHeroId" parameterClass="java.lang.Long" resultClass="ArmsDeploy">
+	       select  t.arm_id,
+			       t.arm_icon,
+			       t.arm_name,
+			       t.physic_attack,
+			       t.physic_defence,
+			       t.magic_attack,
+			       t.magic_defence,
+			       t.hp,
+			       t.exp,
+			       t.speed,
+			       t2.count as arm_count,
+			       t2.hero_arms_id
+			  from sod.arms_tab t
+			  join sod.hero_arms_tab t2
+			    on t2.arm_id = t.arm_id
+			 where t2.role_hero_id = #value#
+			 order by hero_arms_id
+	 </select>
+	<!-- =====================【获取队列中英雄基本信息】============================ -->
+	 <select id="getHerosInfoByTeamId" parameterClass="java.lang.Long" resultMap="heroDetailInTeamInfo">
+	     SELECT            t.role_hero_id,
+	     				   t.physique,
+					       t.mentality,
+					       t.hero_power,
+					       t.endurance,
+					       t.agility,
+					       t.physic_attack,
+					       t.physic_defence,
+					       t.magic_attack,
+					       t.magic_defence,
+					       t.hp,
+					       t.mp,
+					       t.hero_lev,
+					       t.hero_exp,
+					       t.hero_up_exp,
+					       t.speed,
+					       t.distance_attack,
+					       t.distance_move,
+					       t.hero_name,
+					       t.hero_lev,
+					       t.is_free,
+					       t.command,
+					       t.max_hp,
+					       t.max_mp,
+					       t.sht_icon,
+					       t.city_id,
+					       t.now_cityid,
+					       t.role_id
+	      from sod.team_hero_tab t1 join sod.role_hero_tab t on t.role_hero_id = t1.role_hero_id where t1.team_id = #value#
+	 </select>
+	 
+	 
+	 <!-- =====================【获取队列中英雄基本信息】============================ -->
+	 <select id="getHerosInfoByCondition" parameterClass="java.lang.String" resultMap="heroDetailInTeamInfo">
+	      SELECT     t.role_hero_id,
+					       t.mentality,
+					        t.physique,
+					       t.hero_power,
+					       t.endurance,
+					       t.agility,
+					       t.physic_attack,
+					       t.physic_defence,
+					       t.magic_attack,
+					       t.magic_defence,
+					       t.hp,
+					       t.mp,
+					       t.hero_lev,
+					       t.hero_exp,
+					       t.hero_up_exp,
+					       t.speed,
+					       t.distance_attack,
+					       t.distance_move,
+					       t.hero_name,
+					       t.hero_lev,
+					       t.is_free,
+					       t.command,
+					       t.max_hp,
+					       t.max_mp,
+					       t.sht_icon,
+					       t.city_id,
+					       t.now_cityid,
+					       t.role_id
+	      from sod.role_hero_tab t $condiition$
+	 </select>
+	<!-- =====================【获取资源点驻扎英雄基本信息】============================ -->
+	 <select id="getSrcHerosInfoByCondition" parameterClass="java.lang.String" resultMap="heroDetailInTeamInfo">
+	     			SELECT t.role_hero_id,
+					       t.mentality,
+					        t.physique,
+					       t.hero_power,
+					       t.endurance,
+					       t.agility,
+					       t.physic_attack,
+					       t.physic_defence,
+					       t.magic_attack,
+					       t.magic_defence,
+					       t.hp,
+					       t.mp,
+					       t.hero_lev,
+					       t.hero_exp,
+					       t.hero_up_exp,
+					       t.speed,
+					       t.distance_attack,
+					       t.distance_move,
+					       t.hero_name,
+					       t.hero_lev,
+					       t.is_free,
+					       t.command,
+					       t.max_hp,
+					       t.max_mp,
+					       t.sht_icon,
+					       t.city_id,
+					       t.now_cityid,
+					       t.role_id from sod.role_hero_tab t $condition$
+	 </select>
+	<!-- =====================【查看队列状态及所辖英雄状态】============================ -->
+	<select id="selectWarTeamDetailInfo" resultMap="teamDetailInfo" parameterClass="java.lang.String">
+	    <![CDATA[select t.war_team_id,
+					       t.city_id,
+					       t.status,
+					       t.tag_name,
+					       t.tag_x,
+					       t.tag_y,
+					       t.role_id,
+					       t.use_time,
+					       t.end_time,
+					       t.war_type,
+					       t.tag_city_id
+					  from sod.war_team_tab t  $condition$
+					    ]]>
+	</select>
+	
+	
+	<!-- =====================【初始化队列缓存器】============================ -->
+	<select id="initWarTeamCache" resultMap="teamDetailInfo">
+	    <![CDATA[
+		    	select t.war_team_id,
+				       t.city_id,
+				       t.role_id,
+				       t.status,
+				       t.end_time,
+				       t.tag_name,
+				       t.tag_x,
+				       t.tag_y,
+				       t.tag_arms,
+				       t.use_time,
+				       t.war_type,
+				       t.tag_city_id
+				  from sod.war_team_tab t
+				 where t.status < 4 order by to_date(t.end_time, 'yyyy - mm - dd hh24:mi:ss') asc]]>
+	    
+	</select>
+	
+	
+	<!-- =====================【查看已到达目标的战斗队列信息】============================ -->
+	<select id="selectArriveTagWarTeam" resultClass="WarProduce" parameterClass="WarProduce">
+	    <![CDATA[
+		    	select t.war_team_id,
+				       t.city_id,
+				       t.role_id,
+				       t.status,
+				       t.end_time,
+				       t.tag_name,
+				       t.tag_x,
+				       t.tag_y,
+				       t.tag_arms,
+				       t.use_time,
+				       t.war_type,
+				       t.tag_city_id
+				  from sod.war_team_tab t
+				 where to_number(sysdate - to_date(t.end_time, 'yyyy-mm-dd hh24:mi:ss')) >= 0
+				   and t.status < 4 ]]>
+				   <dynamic>
+				       <isNotEmpty property="last_end_time" prepend="and">
+				           to_number(to_date(t.end_time, 'yyyy-mm-dd hh24:mi:ss') - to_date(#last_end_time#, 'yyyy-mm-dd hh24:mi:ss')) > 0
+				       </isNotEmpty>
+				   </dynamic>
+				  
+				 <![CDATA[ order by to_date(t.end_time, 'yyyy - mm - dd hh24:mi:ss') asc]]>
+	    
+	</select>
+
+	
+  
+	<!-- =====================【查看当前正在来犯的队列】============================ -->
+	<select id="getCurrentEnemyTeam" parameterClass="java.lang.Long" resultClass="WarProduce" >
+	    <![CDATA[
+		    	select t.war_team_id,
+				       t.city_id,
+				       t.role_id,
+				       t.status,
+				       t.end_time,
+				       t.tag_name,
+				       t.tag_x,
+				       t.tag_y,
+				       t.tag_arms,
+				       t.use_time,
+				       t.war_type,
+				       t.tag_city_id
+				  from sod.war_team_tab t
+				 where t.tag_city_id in
+				       (select t1.city_id from sod.city_tab t1 where t1.role_id = #role_id#)
+				   and t.status = 1
+				union
+				select t2.war_team_id,
+				       t2.city_id,
+				       t2.role_id,
+				       t2.status,
+				       t2.end_time,
+				       t2.tag_name,
+				       t2.tag_x,
+				       t2.tag_y,
+				       t2.tag_arms,
+				       t2.use_time,
+				       t2.war_type,
+				       t2.tag_city_id
+				  from sod.war_team_tab t2,
+				       (select * from sod.wild_src_tab t3 where t3.owner_id = #role_id#) p
+				 where t2.tag_x = p.tag_x
+				   and t2.tag_y = p.tag_y
+				   and t2.status = 1
+		    	]]>
+	    
+	</select>
+	
+	<!-- =====================【查看已到达目标的战斗队列信息】============================ -->
+	<select id="selectArriveTagWarTeam2" parameterClass="java.lang.String" resultClass="WarProduce" >
+	    <![CDATA[
+		    	select t.war_team_id,
+				       t.city_id,
+				       t.role_id,
+				       t.status,
+				       t.end_time,
+				       t.tag_name,
+				       t.tag_x,
+				       t.tag_y,
+				       t.tag_arms,
+				       t.use_time,
+				       t.war_type,
+				       t.tag_city_id
+				  from sod.war_team_tab t
+				 where to_number(sysdate - to_date(t.end_time, 'yyyy-mm-dd hh24:mi:ss')) >= 0
+				   and t.status < 4 ]]>
+				   <dynamic>
+				       <isNotEmpty prepend="and">
+				           to_number(to_date(t.end_time, 'yyyy-mm-dd hh24:mi:ss') - to_date(#value#, 'yyyy-mm-dd hh24:mi:ss')) > 0
+				       </isNotEmpty>
+				   </dynamic>
+				  
+				 <![CDATA[ order by to_date(t.end_time, 'yyyy - mm - dd hh24:mi:ss') asc]]>
+	    
+	</select>
+	<!-- =====================【查看出征队列剩余英雄】============================ -->
+	<select id="selectHerosInTeam" resultClass="WarProduce" parameterClass="java.lang.String">
+	    <![CDATA[SELECT t.team_id,t.role_hero_id FROM sod.team_hero_tab t WHERE $condition$]]>
+	</select>
+	
+	<!-- =====================【查看队列-英雄表 对应teamId】============================ -->
+	<select id="selectDistintTeamId" resultClass="java.lang.Long" parameterClass="java.lang.String">
+	    <![CDATA[SELECT distinct t.team_id FROM sod.team_hero_tab t WHERE $condition$]]>
+	</select>
+	
+	<!-- =====================【修改战斗队列状态】============================ -->
+	<update id="updateWarTeamInfo" parameterClass="WarProduce">
+		<![CDATA[UPDATE sod.war_team_tab t SET t.status = #status#,end_time =#end_time#  WHERE t.war_team_id = #war_team_id#]]>
+	</update>
+
+	<!-- =====================【修改在外队列信息ByCondition】============================ -->
+	<update id="updateWarTeamByCondition" parameterClass="java.lang.String">
+		<![CDATA[UPDATE sod.war_team_tab t SET $condition$]]>
+	</update>
+
+	<!-- =====================【返回城邦 删除队列信息】============================ -->
+	<delete id="deleteWarTeamInfo" parameterClass="java.lang.Long">
+	    <![CDATA[DELETE FROM sod.war_team_tab t WHERE t.war_team_id = #war_team_id#]]>
+	</delete>
+	
+	<!-- =====================【删除队列-英雄关联信息】============================ -->
+	<delete id="deleteTeamHeroInfo" parameterClass="java.lang.String">
+	    <![CDATA[DELETE FROM sod.team_hero_tab t WHERE $condition$]]>
+	</delete>
+	
+	<!-- =====================【调用Oracle函数队列英雄全部阵亡 删除队列信息】============================ -->
+	<parameterMap class="java.util.Map" id="callCheckTeamHeroParams">
+
+		<parameter property="res" jdbcType="INTEGER" javaType="java.lang.Integer" mode="OUT" />
+		<parameter property="dead_teams_id" jdbcType="VARCHAR" javaType="java.lang.String" mode="IN" />
+
+	</parameterMap>
+	<procedure id="callCheckTeamHero" parameterMap="callCheckTeamHeroParams">
+	    <![CDATA[{? = call check_team_hero_fun(?)} ]]>
+	</procedure>
+	
+	
+	
+	<!-- ================================= 【查询战斗元素详细信息】  ===================== -->
+	<select id="selectArmsDetailInfo" parameterClass="java.lang.String" resultClass="ArmsDeploy">
+		<![CDATA[select t.arm_id,t.arm_icon,
+		       t.arm_name,
+		       t.physic_attack,
+		       t.physic_defence,
+		       t.magic_attack,
+		       t.magic_defence,
+		       t.hp,
+		       t.exp,
+		       t.grade,
+		       t.speed
+		  	from sod.arms_tab t $condition$]]>
+	 </select>
+ 
+	<!-- ================================= 【随机获取野外狩猎 野怪队列】  ===================== -->
+	<select id="selectWildHurtRandomInfo" parameterClass="java.util.Map" resultClass="ArmsDeploy">
+		<![CDATA[
+			select t.arm_id, t.grade
+			  from (select t2.arm_id,t2.grade
+			          from sod.arms_tab t2
+			         where t2.grade >= #min_grade# and t2.grade <=#max_grade#
+			         order by dbms_random.value) t
+			 where rownum <= #kinds#
+		]]>
+ </select>
+</sqlMap>

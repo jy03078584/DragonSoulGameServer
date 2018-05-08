@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="mailMap">
+	<typeAlias alias="Mail" type="com.lk.dragon.db.domain.Mail" />
+	<typeAlias alias="Attachment" type="com.lk.dragon.db.domain.Attachment" />
+
+	<!-- =====================【批量新增邮件】============================ -->
+	<insert id="addNewMailList" parameterClass="java.util.ArrayList">
+		
+		insert into sod.mail_tab(mail_id,mail_title,mail_from,mail_to,mail_content,mail_type,mail_is_read,mail_createtime,has_attachments) 
+					select sod.mail_seq.nextval,mail_title,mail_from,mail_to,mail_content,mail_type,0,to_char(sysdate,'yyyy-mm-dd hh24:mi:ss'),has_attachments 
+					from(
+						<iterate conjunction=" union all ">
+						    select #mails[].mail_title# mail_title,#mails[].mail_from# mail_from,#mails[].mail_to# mail_to,#mails[].mail_content,javaType=java.lang.String,jdbcType=CLOB# mail_content,#mails[].mail_type# mail_type,#mails[].has_attachments# has_attachments from dual
+						</iterate>
+					)
+	</insert>
+
+	<!-- =====================【展示邮件列表】============================ -->
+	<select id="showMailsByCondition" parameterClass="java.util.Map"
+		resultClass="Mail">
+	    <![CDATA[SELECT mail_id,mail_title,mail_createtime,mail_is_read,mail_type,mail_from,
+	    (select count(1) from sod.attachment_tab t where t.mail_id=t1.mail_id and t.is_pick=0) as attachment_picked_count,
+	    (SELECT role_name FROM role_tab t2 WHERE t2.role_id = t1.mail_from)AS mail_from_name FROM mail_tab t1 WHERE t1.mail_to  = #mail_to# AND t1.mail_id > #last_mail_id# ORDER BY t1.mail_createtime DESC]]>
+	</select>
+
+
+	<!-- =====================【获取好友模块邮件】============================ -->
+	<select id="getFriendMails" parameterClass="java.lang.Long"
+		resultClass="Mail">
+	    <![CDATA[SELECT mail_id,mail_title,mail_createtime,mail_is_read,
+       (SELECT role_id FROM role_tab t2 WHERE t2.role_id = t1.mail_from) AS mail_from,
+	    (SELECT role_name FROM role_tab t2 WHERE t2.role_id = t1.mail_from)AS mail_from_name FROM mail_tab t1 WHERE t1.mail_to  = #mail_to# AND t1.mail_type = 3 ORDER BY t1.mail_createtime DESC]]>
+	</select>
+
+	<!-- =====================【查看邮件详细内容】============================ -->
+	<select id="showMailDetailsById" parameterClass="java.lang.Long"
+		resultClass="Mail">
+	    <![CDATA[SELECT mail_title,
+      			 (select count(1) from sod.attachment_tab t where t.mail_id=t1.mail_id and t.is_pick=0) as attachment_picked_count,
+	    		(SELECT role_name FROM role_tab t2 WHERE t2.role_id = t1.mail_from)AS mail_from_name,
+	    		mail_from,mail_to,mail_content,mail_type,mail_is_read,mail_createtime,has_attachments FROM mail_tab t1 WHERE mail_id = #mail_id#]]>
+	</select>
+
+
+	<!-- =====================【是否已向对方发送过好友申请】============================ -->
+	<select id="checkIsSendFriendApply" parameterClass="Mail"
+		resultClass="java.lang.Long">
+	    <![CDATA[SELECT mail_id FROM mail_tab WHERE mail_from = #mail_from# AND mail_to = #mail_to# AND mail_type = 3]]>
+	</select>
+
+
+	<!-- =====================【新增一条邮件数据】============================ -->
+	<insert id="addNewMail" parameterClass="Mail">
+			<selectKey resultClass="java.lang.Long" keyProperty="mail_id">
+				SELECT MAIL_SEQ.NEXTVAL AS mail_id FROM DUAL
+			</selectKey> 
+	    <![CDATA[INSERT INTO mail_tab(mail_id,mail_title,mail_from,mail_to,mail_content,mail_type,mail_is_read,mail_createtime,has_attachments)
+	    					   VALUES(#mail_id#,#mail_title#,#mail_from#,#mail_to#,#mail_content,javaType=java.lang.String,jdbcType=CLOB#,#mail_type#,0,to_char(sysdate,'yyyy-mm-dd hh24:mi:ss'),#has_attachments#)]]>
+	</insert>
+
+	<!-- =====================【新增一条邮件数据】============================ -->
+	<insert id="addNewMailIncludeId" parameterClass="Mail">
+	    <![CDATA[INSERT INTO mail_tab(mail_id,mail_title,mail_from,mail_to,mail_content,mail_type,mail_is_read,mail_createtime,has_attachments)
+	    					   VALUES(#mail_id#,#mail_title#,#mail_from#,#mail_to#,#mail_content,javaType=java.lang.String,jdbcType=CLOB#,#mail_type#,0,to_char(sysdate,'yyyy-mm-dd hh24:mi:ss'),#has_attachments#)]]>
+	</insert>
+	
+		<!-- =====================【新增一条邮件数据】============================ -->
+	<select id="getMailSeq" resultClass="java.lang.Long">
+	    <![CDATA[select sod.mail_seq.nextval from dual]]>
+	</select>
+	<!-- =====================【删除邮件】============================ -->
+	<delete id="deleteMail" parameterClass="java.lang.Long">
+	    <![CDATA[DELETE FROM mail_tab WHERE mail_id = #mail_id#]]>
+	</delete>
+
+
+	<!-- =====================【新增一条附件数据】============================ -->
+	<insert id="addNewAttachment" parameterClass="Attachment">
+		<selectKey resultClass="java.lang.Long" keyProperty="attachment_id">
+			SELECT
+			ATTACHMENT_SEQ.NEXTVAL AS attachment_id FROM DUAL
+		</selectKey> 
+	    <![CDATA[INSERT INTO attachment_tab(attachment_id,mail_id,props_id,counts,extra_info)VALUES(#attachment_id#,#mail_id#,#props_id#,#counts#,#extra_info#)]]>
+	</insert>
+
+	<!-- =====================【删除邮件附件】============================ -->
+	<delete id="deleteAttachment" parameterClass="java.lang.Long">
+	    <![CDATA[DELETE FROM attachment_tab WHERE mail_id = #mail_id#]]>
+	</delete>
+
+	<!-- =====================【查询邮件附带的附件】============================ -->
+	<select id="getAttachmentsByMailId" parameterClass="java.lang.Long"
+		resultClass="Attachment">
+	    <![CDATA[select    t1.attachment_id,
+					       t1.props_id,
+					       t1.is_pick,
+					       t2.props_name    as attachment_name,
+					       t2.props_icon    as attachment_icon,
+					       t2.props_comment as attachment_comment,
+					       t1.counts
+					  from attachment_tab t1
+					 join sod.game_props_tab t2 on t1.props_id = t2.props_id
+					  WHERE t1.mail_id = #mail_id# and t1.is_pick = 0]]>
+	</select>
+
+	<!-- =====================【更改邮件阅读状态】============================ -->
+	<update id="updateIsRead" parameterClass="java.lang.Long">
+	    <![CDATA[UPDATE mail_tab SET mail_is_read = 1 WHERE mail_id = #mail_id#]]>
+	</update>
+
+	<!-- =====================【更改某个类型邮件阅读状态】============================ -->
+	<update id="updateAllIsRead" parameterClass="java.util.Map">
+	    <![CDATA[UPDATE mail_tab SET mail_is_read = 1]]>
+		<dynamic prepend="WHERE">
+			<isNotEmpty prepend="and" property="mail_type">
+	            <![CDATA[mail_type = #mail_type#]]>
+			</isNotEmpty>
+		</dynamic>
+	</update>
+
+	<!-- =====================【删除某个类型的邮件】============================ -->
+	<delete id="deleteAllMail" parameterClass="java.util.Map">
+	    <![CDATA[DELETE FROM mail_tab]]>
+
+		<dynamic prepend="WHERE">
+			<isNotEmpty prepend="and" property="mail_type">
+	            <![CDATA[mail_type = #mail_type#]]>
+			</isNotEmpty>
+		</dynamic>
+
+	</delete>
+
+	<!-- =====================【更改邮件附件状态已被领取】============================ -->
+	<update id="updateAttachHasReceive" parameterClass="java.lang.Long">
+	    <![CDATA[
+	    	update sod.attachment_tab t set t.is_pick=1 where t.attachment_id=#attachment_id#
+	    ]]>
+	</update>
+
+	<!-- =====================【查询邮件附件是否已被提取】============================ -->
+	<select id="checkAttachmentIsPick" parameterClass="java.lang.Long"
+		resultClass="java.lang.Integer">
+	    <![CDATA[select is_pick from sod.attachment_tab where attachment_id=#attachment_id#]]>
+	</select>
+
+	<!-- =====================【查询附件额外属性】============================ -->
+	<select id="getAttachExtraInfo" parameterClass="java.lang.Long"
+		resultClass="java.lang.String">
+	    <![CDATA[select nvl(t.extra_info,'') from sod.attachment_tab t where t.attachment_id=#attachment_id#]]>
+	</select>
+</sqlMap>

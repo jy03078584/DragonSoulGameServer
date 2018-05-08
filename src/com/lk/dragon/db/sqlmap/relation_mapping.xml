@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="relationMap">
+	<typeAlias alias="Relation" type="com.lk.dragon.db.domain.Relation" />
+
+
+	<!-- =====================【新建一条双向关系】============================ -->
+	<insert id="createRelationShip" parameterClass="Relation">
+		<selectKey resultClass="java.lang.Long" keyProperty="relation_id">
+			<![CDATA[SELECT RELATION_SEQ.NEXTVAL AS relation_id FROM DUAL]]>
+		</selectKey>
+		<![CDATA[INSERT INTO relation_tab(relation_id,role_left_id,role_right_id,relation_type)VALUES(#relation_id#,#role_left_id#,#role_right_id#,#relation_type#)]]>
+	</insert>
+
+	<!-- =====================【解除好友关系】============================ -->
+	<delete id="disarmFriendRelationShip" parameterClass="Relation">
+	    <![CDATA[DELETE FROM relation_tab WHERE role_left_id = #role_left_id# AND role_right_id = #role_right_id# OR role_left_id = #role_right_id# AND role_right_id = #role_left_id#]]>
+	</delete>
+	
+	<!-- =====================【删除仇人】============================ -->
+	<delete id="disarmEnemyRelationShip" parameterClass="Relation">
+	    <![CDATA[DELETE FROM relation_tab WHERE role_left_id = #role_left_id# AND role_right_id = #role_right_id#]]>
+	</delete>
+	
+	<!-- =====================【查看两角色间关系】============================ -->
+	<select id="checkRelationShip" parameterClass="Relation" resultClass="Relation">
+	    <![CDATA[SELECT relation_id,relation_type FROM relation_tab WHERE role_left_id = #role_left_id# AND role_right_id = #role_right_id#]]>
+	</select>
+
+	<!-- =====================【判断是否在对方仇人列表中】============================ -->
+	<select id="checkIsEnemy" parameterClass="java.util.Map" resultClass="java.lang.Integer">
+	    <![CDATA[SELECT count(*) FROM relation_tab WHERE role_left_id = #target_id# AND role_right_id = #my_id# AND relation_type = 2]]>
+	</select>
+	<!-- =====================【获取指定社交列表】============================ -->
+	<select id="getRelationRoles" parameterClass="java.lang.Long" resultClass="Role">
+	    <![CDATA[ SELECT t.role_id,
+					        t.role_name,
+					        t.lev,
+					        t.sht_ico,
+					        t.is_online,
+					        t.race,
+					        t1.relation_type
+					   from sod.role_tab t
+					   join sod.relation_tab t1
+					     on t.role_id = t1.role_right_id
+					  where t1.role_left_id = #role_left_id#
+					  order by t.is_online desc]]>
+	</select>
+	
+	<!-- =====================【查询单个关系】============================ -->
+	<select id="getOneRelationRole" parameterClass="java.lang.Long" resultClass="Role">
+	    <![CDATA[ SELECT t.role_id,
+					        t.role_name,
+					        t.lev,
+					        t.sht_ico,
+					        t.is_online,
+					        t.race,
+					        t1.relation_type
+					   from sod.role_tab t
+					   join sod.relation_tab t1
+					     on t.role_id = t1.role_right_id
+					  where t1.relation_id = #relation_id#]]>
+	</select>
+	<resultMap class="Role" id="relationRoleInfoMap">
+	    <result property="role_id" column="role_id"/>
+	    <result property="race" column="race"/>
+	    <result property="role_name" column="role_name"/>
+	    <result property="duke" column="duke"/>
+	    <result property="lev" column="lev"/>
+	    <result property="sex" column="sex"/>
+	    <result property="sht_ico" column="sht_ico"/>
+	    <result property="gold" column="gold"/>
+	    <result property="food" column="food"/>
+	    <result property="wood" column="wood"/>
+	    <result property="stone" column="stone"/>
+	    <result property="eat" column="eat"/>
+	    <result property="citys" column="role_id" select="cityBuildMap.getCitysByRoleId"/>
+	    <result property="faction" column="role_id" select="factionMap.selectFactionRight"/>
+	</resultMap>
+	<!-- =====================【获取对方信息】============================ -->
+	<select id="selectRelationRoleInfo" parameterClass="java.lang.Long" resultMap="relationRoleInfoMap">
+		<![CDATA[SELECT role_id,race,role_name,duke,lev,sex,sht_ico,gold,food,wood,stone,yield_food,eat FROM role_tab WHERE role_id=#role_id# ORDER BY role_id ASC]]>
+	</select>
+</sqlMap>

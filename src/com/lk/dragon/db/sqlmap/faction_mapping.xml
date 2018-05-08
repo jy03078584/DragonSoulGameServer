@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="factionMap">
+	<typeAlias alias="Faction" type="com.lk.dragon.db.domain.Faction" />
+	<typeAlias alias="RoleFaction" type="com.lk.dragon.db.domain.RoleFaction" />
+
+	
+	
+	<!-- =====================【提升帮会成员职位】============================ -->
+	<insert id="upRoleFactionPosition" parameterClass="java.util.Map">
+	     <selectKey resultClass="java.lang.Long" keyProperty="faction_position_id" >     
+        	SELECT FACTION_POSITION_SEQ.NEXTVAL AS faction_position_id FROM DUAL     
+   		</selectKey> 
+	    <![CDATA[INSERT INTO faction_position_tab(faction_position_id,faction_id,position_name,role_id)VALUES(#faction_position_id#,#faction_id#,#position_name#,-1)]]>
+	</insert>
+	 
+	<!-- =====================【创建帮会】============================ -->
+	<insert id="createFaction" parameterClass="Faction">
+	     <selectKey resultClass="java.lang.Long" keyProperty="faction_id" >     
+        	SELECT FACTION_SEQ.NEXTVAL AS faction_id FROM DUAL     
+   		</selectKey> 
+	    <![CDATA[INSERT INTO faction_tab(faction_id,faction_name,icon)VALUES(#faction_id#,#faction_name#,#icon#)]]>
+	</insert>
+	
+	<!-- =====================【玩家入会】============================ -->
+	<insert id="addRoleFaction" parameterClass="java.util.Map">
+	     <selectKey resultClass="java.lang.Long" keyProperty="role_faction_id" >     
+        	SELECT ROLE_FACTION_SEQ.NEXTVAL AS role_faction_id FROM DUAL     
+   		</selectKey> 
+	    <![CDATA[INSERT INTO role_faction_tab(role_faction_id,role_id,faction_id,faction_position)VALUES(#role_faction_id#,#role_id#,#faction_id#,#faction_position#)]]>
+	</insert>
+	
+	<!-- =====================【帮会-会员解除关系】============================ -->
+	<delete id="deleteRoleFaction" parameterClass="java.lang.Long">
+	    <![CDATA[DELETE FROM role_faction_tab t WHERE t.role_id = #role_id#]]>
+	</delete>
+	
+	<!-- =====================【查询帮会成员列表】============================ -->
+	<select id="getFactionRoles" parameterClass="java.lang.String" resultClass="RoleFaction">
+	    <![CDATA[select    t.role_id,
+					       t3.right_id      as right_id,
+					       t2.role_name     as role_name,
+					       t2.sht_ico		as role_icon,
+					       t2.race          as role_race,
+					       t2.lev           as role_lev,
+					       t2.is_online     as role_status,
+					       t.role_faction_id as role_faction_id,
+					       t.faction_id,
+					       t3.position_name as position_name,
+					       t.contribution
+					  from sod.role_faction_tab t
+					  		    join sod.role_tab t2
+					    on t.role_id = t2.role_id
+					  			join sod.faction_position_tab t3
+					    on t.faction_position = t3.faction_position_id $condition$ order by t3.right_id ASC]]>
+	</select>
+	
+	
+	<!-- =====================【查看是否已经加入帮会】============================ -->
+	<select id="checkAlreadyFaction" parameterClass="java.lang.Long" resultClass="java.lang.Integer">
+	    <![CDATA[  SELECT count(1) FROM sod.role_faction_tab t WHERE t.role_id = #role_id#]]>
+	</select>
+
+	<!-- =====================【查询某人是否是本帮成员】============================ -->
+	<select id="checkIsSameFaction" parameterClass="java.lang.String" resultClass="java.lang.Integer">
+	    <![CDATA[  SELECT count(1) FROM sod.role_faction_tab t $condition$]]>
+	</select>
+	
+	
+	<!-- =====================【查询帮会列表】============================ -->
+	<select id="getFactionsByCondition" parameterClass="java.lang.String" resultClass="Faction">
+	    <![CDATA[SELECT faction_id,faction_name,faction_lev,member_counts,max_member_counts,faction_score,
+	    (SELECT t2.role_name from sod.role_tab t2 where t2.role_id = (select t3.role_id from sod.role_faction_tab t3 where t3.faction_id = t.faction_id and t3.faction_position = -1))leader_name FROM faction_tab t  $condition$]]>
+	</select>
+	
+	
+	<!-- =====================【获取帮会申请表Sequence】============================ -->
+	<select id="getFactionsApplyKeyId" resultClass="java.lang.Long">
+	    <![CDATA[SELECT FACTION_APPLY_SEQ.NEXTVAL AS rela_id FROM DUAL]]>
+	</select>
+	
+	<!-- =====================【申请加入帮会】============================ -->
+	<insert id="applyUnionFaction" parameterClass="java.util.Map">
+	    <![CDATA[INSERT INTO faction_apply_tab(rela_id,faction_id,role_id)VALUES(#rela_id#,#faction_id#,#role_id#)]]>
+	</insert>
+	
+	<!-- =====================【查询帮会申请列表】============================ -->
+	<select id="selectApplyFactionInfo" parameterClass="java.util.Map" resultClass="Faction">
+	    <![CDATA[select    t.rela_id,
+					       t.faction_id,
+					       t.role_id,
+					       t2.sht_ico as role_icon,
+					       (select t3.faction_name
+					          from sod.faction_tab t3
+					         where t3.faction_id = t.faction_id) as faction_name,
+					       t2.role_name as role_name,
+					       t2.lev as role_lev,
+					       t2.race as role_race
+					  from faction_apply_tab t
+					  join sod.role_tab t2
+					    on t.role_id = t2.role_id ]]>
+		<dynamic prepend="where">
+			<isNotEmpty property="role_id" prepend="and">
+	       				 <![CDATA[t.role_id=#role_id#]]>
+			</isNotEmpty>
+			<isNotEmpty property="faction_id" prepend="and">
+	       				 <![CDATA[t.faction_id=#faction_id#]]>
+			</isNotEmpty>
+		</dynamic>
+	</select>
+	
+	<!-- =====================【删除申请表信息】============================ -->
+	<delete id="deleteApplyFactionInfo" parameterClass="java.lang.String">
+	    <![CDATA[DELETE FROM faction_apply_tab t $condition$]]>
+	</delete>
+	
+	<!-- =====================【加载角色所在帮会信息】============================ -->
+	<select id="selectFactionRight" parameterClass="java.lang.Long" resultClass="Faction">
+	    <![CDATA[SELECT (SELECT t2.right_id FROM sod.faction_position_tab t2 WHERE t2.faction_position_id = t.faction_position) AS right_id,t.get_reward_flag,
+       					t3.faction_lev,
+       					t3.faction_name,
+       					t3.max_member_counts,
+				        t3.faction_public,
+				        t3.faction_score,
+				        t3.icon,
+				        t3.member_counts,
+				        t3.faction_id
+				  FROM sod.role_faction_tab t 
+				  join sod.faction_tab t3 on t3.faction_id = t.faction_id
+				  WHERE t.role_id = #role_id#]]>
+	</select>
+	
+	<!-- =====================【角色权限】============================ -->
+	<select id="selectRoleFactionRight" parameterClass="java.lang.Long" resultClass="java.lang.Integer">
+	    <![CDATA[SELECT (SELECT t2.right_id FROM sod.faction_position_tab t2 WHERE t2.faction_position_id = t.faction_position) AS right_id FROM sod.role_faction_tab t WHERE t.role_id = #role_id#]]>
+	</select>
+	
+
+	<!-- =====================【更改帮会信息】============================ -->
+	<update id="updateFactionInfo" parameterClass="java.util.Map">
+		<![CDATA[UPDATE faction_tab t SET t.faction_id=#faction_id#]]>
+		<isNotEmpty prepend="," property="faction_lev">
+			<![CDATA[t.faction_lev = #faction_lev#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="member_counts">
+			<![CDATA[t.member_counts = t.member_counts $operator$ #member_counts#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="max_member_counts">
+			<![CDATA[t.max_member_counts = #max_member_counts#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="faction_score">
+			<![CDATA[t.faction_score =#faction_score#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="faction_public">
+			<![CDATA[t.faction_public = #faction_public#]]>
+		</isNotEmpty>
+		<![CDATA[WHERE faction_id=#faction_id#]]>
+	</update>
+	
+	
+	<!-- =====================【更改帮会成员列表信息】============================ -->
+	<update id="updateRoleFactionInfo" parameterClass="java.util.Map">
+		<![CDATA[UPDATE sod.role_faction_tab t SET role_id = #role_id#]]>
+		<isNotEmpty prepend="," property="faction_position">
+			<![CDATA[t.faction_position = #faction_position#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="contribution">
+			<![CDATA[t.contribution = t.contribution $operator$ #contribution#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="get_reward_flag">
+			<![CDATA[t.get_reward_flag =#get_reward_flag# ]]>
+		</isNotEmpty>
+		<![CDATA[WHERE t.role_id=#role_id#]]>
+	</update>
+	
+	
+	
+	<!-- =====================【删除faction_position_tab信息】============================ -->
+	<delete id="deleteFactionPosition" parameterClass="java.lang.Long">
+	    <![CDATA[DELETE FROM faction_position_tab t WHERE t.faction_position_id = #position_id#]]>
+	</delete>
+	
+	<!-- =====================【修改公会管理层职位称呼】============================ -->
+	<update id="updateFactionPosition" parameterClass="java.util.Map">
+	    <![CDATA[UPDATE faction_position_tab t SET t.position_name = #position_name# WHERE t.faction_position_id = #faction_position_id#]]>
+	</update>
+	
+	
+	<!-- =====================【记录帮会日志】============================ -->
+	<insert id="addFactionLog" parameterClass="java.util.Map">
+	     <selectKey resultClass="java.lang.Long" keyProperty="faction_log_id" >     
+        	SELECT FACTION_LOG_SEQ.NEXTVAL AS faction_log_id FROM DUAL     
+   		</selectKey> 
+	    <![CDATA[INSERT INTO faction_log_tab(faction_log_id,faction_id,log_info,log_time)VALUES(#faction_log_id#,#faction_id#,to_char(sysdate,'mm-dd hh24:mi:ss')||#log_info#,to_char(sysdate,'yyyy-mm-dd hh24:mi:ss'))]]>
+	</insert>
+	
+	
+	
+	<!-- =====================【查询帮会记录】============================ -->
+	<select id="selectFactionLog" parameterClass="java.lang.Long" resultClass="Faction">
+	    <![CDATA[SELECT t.log_info FROM (SELECT t1.log_info FROM sod.faction_log_tab t1 WHERE t1.faction_id = #faction_id# ORDER BY t1.log_time DESC) t WHERE ROWNUM <= 50]]>
+	</select>
+	
+	<!-- =====================【查询当前公会职位使用信息】============================ -->
+	<select id="selectFactionPositionUse" parameterClass="java.util.Map" resultClass="Faction">
+	    <![CDATA[select count(1) as position_use_count from sod.role_faction_tab t where t.faction_id=#faction_id# and t.faction_position=#faction_position_id#]]>
+	</select>
+	
+	<!-- =====================【查询当前公会职位列表信息】============================ -->
+	<select id="selectPositionList" parameterClass="java.lang.Long" resultClass="Faction">
+	    <![CDATA[select faction_position_id, position_name, right_id from sod.faction_position_tab t where t.faction_id=#faction_id# or t.faction_position_id=-2]]>
+	</select>
+	
+	<!-- =====================【解散帮会：触发器删除其他关联表数据】============================ -->
+	<delete id="deleteFaction" parameterClass="java.lang.Long">
+	    <![CDATA[DELETE FROM sod.faction_tab t WHERE t.faction_id = #faction_id#]]>
+	</delete>
+	
+</sqlMap>

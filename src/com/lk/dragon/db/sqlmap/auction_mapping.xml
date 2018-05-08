@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="auctionMap">
+	<typeAlias alias="Auction" type="com.lk.dragon.db.domain.Auction" />
+
+	
+	
+
+	<!-- =====================【查看物品基本信息】============================ -->
+	<select id="selectAutionInfo" parameterClass="java.lang.Long" resultClass="Auction">
+	    <![CDATA[select t1.auction_id, 
+					                t1.seller_id, 
+					                t1.props_id,
+					                t2.quality,
+					                to_char(sysdate, 'yyyy-mm-dd hh24:mi:ss') as sysdate_database,
+					                t1.overdue, 
+					                t2.props_name, 
+					                t2.props_icon, 
+					                t2.props_comment,
+					                t1.privce,
+					                t2.props_type,
+					                t2.command_lev,
+					                t1.extra_info, 
+					                t1.props_counts 
+					                from sod.auction_tab t1 join
+					                     sod.game_props_tab t2 on t1.props_id = t2.props_id
+					                where t1.auction_id = #auction_id#]]>
+	</select>
+	
+	<!-- =====================【查看物品基本信息】============================ -->
+	<select id="selectAutionKeyId" resultClass="java.lang.Long">
+	    <![CDATA[SELECT AUCTION_SEQ.NEXTVAL AS auction_id FROM DUAL]]>
+	</select>
+	
+	<!-- =====================【拍卖行寄售物品】============================ -->
+	<insert id="addAuction" parameterClass="Auction">
+	    <![CDATA[INSERT INTO auction_tab(auction_id,seller_id,props_id,privce,props_counts,overdue,extra_info)
+	    		 VALUES(#auction_id#,#seller_id#,#props_id#,#privce#,#props_counts#,to_char(sysdate+1 ,'yyyy-mm-dd hh24:mi:ss'),#extra_info#)]]>
+	</insert>
+	
+	<!-- =====================【商品售罄】============================ -->
+	<delete id="deleteAuction" parameterClass="Auction">
+	    <![CDATA[DELETE FROM auction_tab WHERE auction_id = #auction_id#]]>
+	</delete>
+	
+	<!-- =====================【查看当前角色寄售量】============================ -->
+	<select id="checkConsignCounts" parameterClass="java.lang.Long" resultClass="java.lang.Integer">
+	    <![CDATA[SELECT count(*) FROM auction_tab WHERE seller_id = #seller_id#]]>
+	</select>
+	
+	
+	<!-- =====================【购买拍卖行列表 针对可叠合商品 修改数量】============================ -->
+	<update id="updateAuctionCounts" parameterClass="Auction">
+	    <![CDATA[UPDATE auction_tab SET props_counts = #props_counts# WHERE auction_id = #auction_id#]]>
+	</update>
+	
+	<!-- =====================【获取已方寄售列表】============================ -->
+	<select id="getAuctionListSelf" parameterClass="java.util.Map" resultClass="Auction">
+	    <![CDATA[ 
+	    		select * from (select rownum r, p.*
+					          from (select t1.auction_id,
+					                       t1.props_id,
+					                       t2.quality,
+					                       to_number(to_date(t1.overdue, 'yyyy-mm-dd hh24:mi:ss') - sysdate) * 24 * 60 * 60 last_seconds,
+					                       to_char(sysdate, 'yyyy-mm-dd hh24:mi:ss') as sysdate_database,
+					                       t1.overdue,
+					                       t2.props_name,
+					                       t2.props_icon,
+					                       t2.props_comment,
+					                       t1.privce,
+					                       t1.props_counts,
+					                       t1.extra_info,
+					                       t2.command_lev,
+					                       t2.props_type
+					                  from sod.auction_tab t1
+					                  join sod.game_props_tab t2
+					                    on t1.props_id = t2.props_id
+					                 where t1.seller_id = #role_id#
+					                 order by t1.overdue desc) p
+					         where rownum <= #end_index#)
+					 where r >= #begin_index#
+	    ]]>
+	</select>
+	<!-- =====================【获取拍卖行列表】============================ -->
+	<select id="getAllAuctionList" parameterClass="java.util.Map" resultClass="Auction">
+	    
+	    <![CDATA[
+				  select   q.auction_id,
+					       q.seller_id,
+					       q.props_id,
+					       q.sysdate_database,
+					       q.overdue,
+					       q.props_name,
+					       q.props_icon,
+					       q.props_comment,
+					       q.privce,
+					       q.seller_name,
+					       q.quality,
+					       q.command_lev,
+					       q.props_type,
+					       q.command_lev,
+					       q.props_counts,
+					       q.extra_info
+					  from (select rownum r, p.*
+					          from (select t1.auction_id, 
+					                t1.seller_id, 
+					                t3.role_name as seller_name, 
+					                t1.props_id,
+					                t2.quality,
+					                to_char(sysdate, 'yyyy-mm-dd hh24:mi:ss') as sysdate_database,
+					                t1.overdue, 
+					                t2.props_name, 
+					                t2.props_icon, 
+					                t2.props_comment,
+					                t1.privce,
+					                t2.props_type,
+					                t2.command_lev,
+					                t1.extra_info, 
+					                t1.props_counts 
+					                from sod.auction_tab t1 join
+					                     sod.game_props_tab t2 on t1.props_id = t2.props_id join
+					                     sod.role_tab t3 on t1.seller_id = t3.role_id 
+					                     where t1.seller_id <> #props_roleId_sql# and
+					                           to_date(t1.overdue,'yyyy-mm-dd hh24:mi:ss') > sysdate ]]>
+					    
+					<!-- 按道具名称查询 -->
+			        <isNotEmpty prepend="and" property="props_name_sql">
+			            <![CDATA[t1.props_id in (SELECT t2.props_id FROM game_props_tab t2 WHERE t2.props_name LIKE '%'||#props_name_sql#||'%')]]>
+			        </isNotEmpty>
+			        
+			        <!-- 按道具类型查询 -->
+			        <isNotEmpty prepend=" " property="props_type_sql">
+			            <isNotEmpty property="sub_type" prepend=" "> 
+			                <isEqual property="props_type_sql" compareValue="1" prepend="and">
+				       		    <!-- 装备类 -->
+				       		    <![CDATA[t1.props_id in (select t3.props_id from sod.equip_tab t3 where t3.equip_location = #sub_type#)]]>
+			       			</isEqual>
+			       			<isEqual property="props_type_sql" compareValue="4" prepend="and">
+				       		    <!-- 宝石类 -->
+				       			<![CDATA[t1.props_id in (select t3.props_id from sod.gem_tab t3 where t3.buff_type = #sub_type#)]]>
+			       			</isEqual>
+			            </isNotEmpty>
+			            
+			            <isEmpty property="sub_type" prepend="and">
+				            <![CDATA[t1.props_id in (SELECT t2.props_id FROM game_props_tab t2 WHERE t2.props_type = #props_type_sql#)]]>
+			            </isEmpty>
+			       		
+			        </isNotEmpty>
+			        
+			        <!-- 商品品质 -->
+			        <isNotEmpty prepend="and" property="props_quality">
+			            <![CDATA[ t2.quality = #props_quality#]]>
+			        </isNotEmpty>
+	        
+			<![CDATA[ order by $order_key$ $de_as_key$) p) q
+							 where q.r >= #beg_index#
+							   and q.r <= #end_index#]]>
+	   
+	</select>
+	
+	
+	
+</sqlMap>

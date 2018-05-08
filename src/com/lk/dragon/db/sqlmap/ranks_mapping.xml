@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="ranksMap">
+	<typeAlias alias="Ranks" type="com.lk.dragon.db.domain.Ranks" />
+
+	<!-- =====================【角色信息相关排行】============================ -->
+	<!-- <select id="roleRansInfo" parameterClass="java.lang.Integer" resultClass="Ranks"> 
+		<![CDATA[ select * from (select rownum r, p.* from (select t.rank_data, t.rank_type, 
+		t.object_id, t.rank_number,t1.role_name from sod.rank_tab t join sod.role_tab 
+		t1 on t.object_id = t1.role_id where t.rank_type = #rank_type# order by t.rank_number 
+		asc) p where rownum <= 20) where r >= 1 ]]> </select> -->
+	<!-- =====================【查询本人排行】============================ -->
+	<select id="getRansInfoMySelf" parameterClass="Ranks"
+		resultClass="Ranks">
+	    <![CDATA[
+			select t.rank_data,t.rank_number from sod.rank_tab t where t.rank_type = #rank_type# and t.object_id = #object_id#
+	    ]]>
+	</select>
+
+	<!-- =====================【公会信息相关排行】============================ -->
+	<select id="getRansInfo" parameterClass="java.util.Map"
+		resultClass="Ranks">
+	    <![CDATA[
+			    select * from (select rownum r, p.*
+		          from (select t.rank_data, t.rank_type, t.object_id, t.rank_number]]>
+
+		<!--角色相关查询 -->
+		<isEqual property="select_type" prepend="," compareValue="1">
+		          <![CDATA[t1.role_name object_name from sod.rank_tab t join sod.role_tab t1 on t.object_id = t1.role_id]]>
+		</isEqual>
+		<!--公会相关查询 -->
+		<isEqual property="select_type" prepend="," compareValue="2">
+		        <![CDATA[t1.faction_name object_name from sod.rank_tab t join sod.faction_tab t1 on t.object_id = t1.faction_id]]>
+		</isEqual>
+		<![CDATA[
+		           where t.rank_type = #rank_type#
+		                 order by t.rank_number asc) p
+		         where rownum <= 20) where r >= 1
+	    ]]>
+	</select>
+	
+	<!-- =====================【获取最新Rank 缓存到cahche】============================ -->
+	<select id="initRankInfoCache" resultClass="Ranks">
+	    <![CDATA[
+			select t.rank_id, t.rank_data,t.rank_number,t.rank_type from sod.rank_tab t 
+	    ]]>
+	</select>
+</sqlMap>

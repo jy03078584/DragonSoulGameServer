@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="cityBuildMap">
+	<typeAlias alias="City" type="com.lk.dragon.db.domain.City" />
+	<typeAlias alias="Build" type="com.lk.dragon.db.domain.Build" />
+	<typeAlias alias="CityBuild" type="com.lk.dragon.db.domain.CityBuild" />
+	<typeAlias alias="LkMap" type="com.lk.dragon.db.domain.LkMap" />
+	<typeAlias alias="BuildCreate" type="com.lk.dragon.db.domain.BuildCreate" />
+
+
+	<!-- =====================【新分配城镇】============================ -->
+	<insert id="createNewCity" parameterClass="City">
+		<selectKey resultClass="java.lang.Long" keyProperty="city_id">
+			SELECT CITY_SEQ.NEXTVAL AS city_id FROM DUAL
+		</selectKey> 
+	    <![CDATA[INSERT INTO city_tab(city_id,role_id,site_x,site_y,home,race,eat,name)
+	    		 VALUES(#city_id#,#role_id#,#site_x#,#site_y#,#home#,#race#,#eat#,#name#)]]>
+	</insert>
+
+
+	<!-- =====================【新建一建筑】============================ -->
+	<insert id="createNewBuild" parameterClass="CityBuild">
+		<selectKey resultClass="java.lang.Long" keyProperty="rela_id">
+			SELECT CITY_BUILD_SEQ.NEXTVAL AS rela_id FROM DUAL
+		</selectKey> 
+	    <![CDATA[INSERT INTO city_bulid_tab(rela_id,city_id,bulid_id,curr_lev,levup,lev_up_t,locate)
+	    		 VALUES(#rela_id#,#city_id#,#bulid_id#,0,1,to_char(sysdate+numtodsinterval(#create_time#,'second'),'yyyy-mm-dd hh24:mi:ss'),#locate#)]]>
+	</insert>
+
+	
+	<!-- =====================【新建一特殊建筑：城镇中心】============================ -->
+	<insert id="createHomeBuild" parameterClass="CityBuild">
+		<selectKey resultClass="java.lang.Long" keyProperty="rela_id">
+			SELECT CITY_BUILD_SEQ.NEXTVAL AS rela_id FROM DUAL
+		</selectKey> 
+	    <![CDATA[INSERT INTO city_bulid_tab(rela_id,city_id,bulid_id,curr_lev)
+	    		 VALUES(#rela_id#,#city_id#,#bulid_id#,1)]]>
+	</insert>
+	
+	<!-- =====================【查询当前种族城镇大厅ID】============================ -->
+	<select id="findHomeBuildByRace" parameterClass="java.lang.Integer"
+		resultClass="java.lang.Integer">
+	    <![CDATA[SELECT bulid_id FROM bulid_tab WHERE race = #race# AND type = 0]]>
+	</select>
+
+	<!-- =====================【查询该种族所有内城建筑】============================ -->
+	<select id="getBuildsByRace" parameterClass="java.lang.Integer"
+		resultClass="Build">
+		<![CDATA[select t.bulid_id,t.bulid_name,t.icon,t.max_lev,t.type FROM bulid_tab t
+				 WHERE t.race = #race# OR t.race = -1]]>
+	</select>
+
+	<!-- =====================【查询可建造外城建筑信息】============================ -->
+	<select id="getBuildsInfoOut"  resultClass="Build">
+		<![CDATA[select t.bulid_id,t.bulid_name,t.icon,t.max_lev,t.type FROM sod.bulid_tab t where t.type in (17,18,19)]]>
+	</select>
+		<!-- =====================【查询建筑对应等级产量数值】============================ -->
+	<select id="getResourceYieldOut"  resultClass="CityBuild">
+		<![CDATA[select t.build_type,t.lev,t.val from sod.build_gain_tab t ]]>
+	</select>
+	<!-- =====================【查询角色已拥有的城邦列表】============================ -->
+	<select id="getCitysByRoleId" parameterClass="java.lang.Long" resultClass="City">
+	    <![CDATA[SELECT t.city_id,t.role_id,t.site_x,t.site_y,t.home,t.race,t.eat,t.name,t.loyal,t.store,t.yield_food,t.yield_wood,t.yield_stone,nvl((to_date(t.trans_cd,'yyyy-mm-dd hh24:mi:ss') -sysdate )* 24*60*60,0)trans_cd FROM city_tab t WHERE role_id = #role_id#]]>
+	</select>
+	<!-- =====================【查询角色所有城邦总人口】============================ -->
+	<select id="getCityEatByRoleId" parameterClass="java.lang.Long" resultClass="java.lang.Integer">
+	    <![CDATA[SELECT sum(t.eat)eat FROM city_tab t WHERE role_id = #role_id#]]>
+	</select>
+	<!-- =====================【查询角色城邦列表信息】============================ -->
+	<select id="getCitysInfoByCondition" parameterClass="java.lang.String" resultClass="City">
+	    <![CDATA[SELECT t.city_id,t.role_id,t.site_x,t.site_y,t.home,t.race,t.eat,t.name,t.loyal,t.store,t.yield_food,t.yield_wood,t.yield_stone,nvl((to_date(t.trans_cd,'yyyy-mm-dd hh24:mi:ss') -sysdate )* 24*60*60,0)trans_cd FROM city_tab t $condition$]]>
+	</select>
+	
+	<!-- 【查询城镇的产量及友军数量信息】 -->
+	<select id="getCityYieldReinInfoByCityId" parameterClass="java.lang.Long" resultClass="City">
+	    <![CDATA[select t1.reinforce, 
+	    			   t1.yield_food,
+				       t1.yield_stone,
+				       t1.yield_wood,
+				       t2.yield_food  role_food,
+				       t2.yield_stone role_stone,
+				       t2.yield_wood  role_wood,
+				       t1.eat,
+				       t2.eat as role_eat,
+				       t1.loyal
+				  from sod.city_tab t1
+				  join sod.role_tab t2
+				    on t1.role_id = t2.role_id where t1.city_id = #city_id#]]>
+	</select>
+	
+	<!-- =====================【查询城邦基本信息】============================ -->
+	<select id="getCityInfo" parameterClass="java.lang.String" resultClass="City">
+	    <![CDATA[SELECT city_id,role_id,site_x,site_y,home,race,eat,name,loyal,reinforce,store,t.yield_food,t.yield_wood,t.yield_stone,nvl((to_date(t.trans_cd,'yyyy-mm-dd hh24:mi:ss') -sysdate )* 24*60*60,0)trans_cd FROM sod.city_tab t  $condition$]]>
+	</select>
+	
+	
+	<!-- =====================【获取地图剩余可用点】============================ -->
+	<select id="findEnablePoint" resultClass="LkMap">
+	    <![CDATA[SELECT map_id,site_x,site_y,item FROM map_tab WHERE item = 0]]>
+	</select>
+
+	<!-- =====================【更改世界地图点元素】============================ -->
+	<update id="updateMapItem" parameterClass="LkMap">
+	    <![CDATA[UPDATE map_tab SET item = #item#，type = #type#  WHERE site_x = #site_x# AND site_y = #site_y#]]>
+	</update>
+
+	<!-- =====================【检查该点元素类型】============================ -->
+	<select id="checkPointItem" resultClass="java.lang.Integer"
+		parameterClass="LkMap">
+	    <![CDATA[SELECT item FROM map_tab WHERE site_x = #site_x# AND site_y = #site_y#]]>
+	</select>
+
+	<!-- =====================【建筑升级】============================ -->
+	<update id="buildLevUping" parameterClass="java.util.Map">
+	    <![CDATA[UPDATE city_bulid_tab SET levup = 1,lev_up_t = to_char(sysdate+numtodsinterval(#levUpTime#,'second'),'yyyy-mm-dd hh24:mi:ss') WHERE rela_id = #rela_id#]]>
+	</update>
+	
+	<!-- =====================【修改建筑信息】============================ -->
+	<update id="updateCityBuidInfo" parameterClass="java.util.Map">
+	    <![CDATA[UPDATE city_bulid_tab t SET $condition$ WHERE rela_id = #rela_id#]]>
+	</update>
+	
+	<!-- =====================【建筑升级完成】============================ -->
+	<update id="buildLevUpEnd" parameterClass="CityBuild">
+	    <![CDATA[UPDATE city_bulid_tab SET levup = 0,lev_up_t = NULL]]>
+	    <isNotEmpty prepend="," property="curr_lev">
+	        <![CDATA[curr_lev = #curr_lev#]]>
+	    </isNotEmpty>
+	    
+	    <![CDATA[ WHERE rela_id = #rela_id#]]>
+	</update>
+	
+	<!-- =====================【查询建筑升级信息】============================ -->
+	<select id="getLevUpInfo" parameterClass="java.lang.Long" resultClass="CityBuild">
+	    <![CDATA[SELECT curr_lev,levup,lev_up_t,to_char(sysdate,'yyyy-mm-dd hh24:mi:ss') AS now_db FROM city_bulid_tab WHERE rela_id = #rela_id#]]>
+	</select>
+	
+	
+	<!-- =====================【修改城邦信息】============================ -->
+	<update id="updateCityInfo" parameterClass="java.util.Map">
+	    <![CDATA[UPDATE city_tab t SET $condition$ WHERE t.city_id = #city_id#]]>
+	</update>
+	
+	<!-- =====================【修改城邦名字】============================ -->
+	<update id="updateCityName" parameterClass="City">
+	    <![CDATA[UPDATE city_tab SET name = #name# WHERE city_id = #city_id#]]>
+	</update>
+	
+	<!-- =====================【修改城邦人口】============================ -->
+	<update id="updateCityEat" parameterClass="java.util.Map">
+	    <![CDATA[UPDATE city_tab t SET t.eat = t.eat $operator$ #eat# WHERE city_id = #city_id#]]>
+	</update>
+	
+	<!-- =====================【修改城邦坐标】============================ -->
+	<update id="updateCityPoint" parameterClass="City">
+	    <![CDATA[UPDATE city_tab SET site_x = #site_x#,site_y = #site_y# WHERE city_id = #city_id#]]>
+	</update>
+	
+	
+	<!-- =====================【拆毁建筑】============================ -->
+	<delete id="destoryBuild" parameterClass="java.lang.Long">
+	    <![CDATA[DELETE FROM city_bulid_tab WHERE rela_id = #rela_id#]]>
+	</delete>
+	<!-- =====================【获取地图可用随机点】============================ -->
+	<select id="getEnableRadomPoint" resultClass="java.lang.String">
+	    <![CDATA[SELECT sod.get_point FROM dual]]>
+	</select>
+	
+	
+	<!-- =====================【获取指定城市中所有已建建筑】============================ -->
+	<select id="getAlerdyBuilded" parameterClass="java.util.Map" resultClass="CityBuild">
+	    <![CDATA[select    t1.rela_id,
+					       t1.city_id,
+					       t1.bulid_id,
+					       t1.curr_lev,
+					       t1.levup,
+					       t1.lev_up_t,
+					       t2.bulid_name as bulidname,
+					       t2.icon as bulidicon,
+					       t2.max_lev as bulidmaxlev,
+					       t2.type as type,
+					       t1.locate,
+					       to_char(sysdate, 'yyyy-mm-dd hh24:mi:ss') as now_db
+					  from city_bulid_tab t1
+					  join sod.bulid_tab t2
+					    on t1.bulid_id = t2.bulid_id]]>
+					    <dynamic prepend="where">
+					        <isNotEmpty property="city_id" prepend="and">
+					            <![CDATA[ t1.city_id = #city_id# ]]>
+					        </isNotEmpty>
+					        <isNotEmpty property="rela_id" prepend="and">
+					            <![CDATA[ t1.rela_id = #rela_id# ]]>
+					        </isNotEmpty>
+					    </dynamic>
+					<![CDATA[ order by t1.rela_id ASC]]>
+	</select>
+	
+	<!-- =====================【查询建筑指定等级基本信息】============================ -->
+	<select id="buildLevupUse" resultClass="BuildCreate" parameterClass="java.util.Map">
+	    <![CDATA[SELECT record_id,food,wood,stone,gold,eat,create_t FROM sod.build_create_tab t WHERE t.type = #type# AND t.lev = #lev#]]>
+	</select>
+	
+	<!-- =====================【根据关联ID查询城邦ID】============================ -->
+	<select id="selectCityIdByRelaId" resultClass="java.lang.Long" parameterClass="java.lang.Long">
+	    <![CDATA[SELECT city_id FROM sod.city_bulid_tab t WHERE t.rela_id = #rela_id#]]>
+	</select>
+	
+	<!-- =====================【获取指定建筑的详细信息】============================ -->
+	<select id="selectBuildInfo" resultClass="CityBuild" parameterClass="java.lang.String">
+	    <![CDATA[SELECT t.rela_id,t.city_id,t.bulid_id,(select temp.icon FROM sod.bulid_tab temp WHERE temp.bulid_id = t.bulid_id)bulidIcon,t.curr_lev,t.levup,t.lev_up_t FROM sod.city_bulid_tab t $condition$]]>
+	</select>
+	
+	<!-- =====================【获取指定建筑共提供人口数】============================ -->
+	<select id="selectAddEatByRealId" resultClass="java.lang.Integer" parameterClass="java.lang.Long">
+	    <![CDATA[SELECT sum(T.eat) AS sumEat
+  			FROM SOD.BUILD_CREATE_TAB T,
+       (SELECT T1.CURR_LEV, T1.BULID_ID FROM SOD.CITY_BULID_TAB T1 WHERE T1.RELA_ID =#rela_id#) R
+ 		WHERE T.LEV <= R.CURR_LEV
+  		 AND T.TYPE = (SELECT B.TYPE FROM SOD.BULID_TAB B WHERE B.BULID_ID = R.BULID_ID)
+	    ]]>
+	</select>
+	
+	
+	
+	<!-- =====================【调用Oracle函数插入数据：建筑升级完成】============================ -->
+	<parameterMap class="java.util.Map" id="callCityBuildUpFinishParams">
+
+		<parameter property="res" jdbcType="VARCHAR" javaType="java.lang.String" mode="OUT" />
+		<parameter property="p_role_id" jdbcType="INTEGER" javaType="java.lang.Long" mode="IN" />
+		<parameter property="p_rela_id" jdbcType="INTEGER" javaType="java.lang.Long" mode="IN" />
+		<parameter property="p_lev" jdbcType="INTEGER" javaType="java.lang.Integer" mode="IN" />
+		<parameter property="p_diamon" jdbcType="INTEGER" javaType="java.lang.Integer" mode="IN" />
+
+	</parameterMap>
+	<procedure id="callBuildUpFinishFun" parameterMap="callCityBuildUpFinishParams">
+	    <![CDATA[{? = call sod.build_levup_fun(?,?,?,?)} ]]>
+	</procedure>
+	
+</sqlMap>

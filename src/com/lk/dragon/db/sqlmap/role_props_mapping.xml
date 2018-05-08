@@ -1,0 +1,572 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="rolePropsMap">
+	<typeAlias alias="RoleProps" type="com.lk.dragon.db.domain.RoleProps" />
+	<typeAlias alias="Gem" type="com.lk.dragon.db.domain.Gem" />
+	<typeAlias alias="HeroEquip" type="com.lk.dragon.db.domain.HeroEquip" />
+	<typeAlias alias="RolePropsEquipPro" type="com.lk.dragon.db.domain.RolePropsEquipPro" />
+	<typeAlias alias="RoleHero" type="com.lk.dragon.db.domain.RoleHero" />
+	<typeAlias alias="Equip" type="com.lk.dragon.db.domain.Equip" />
+	<typeAlias alias="EquipGem" type="com.lk.dragon.db.domain.EquipGem" />
+	<typeAlias alias="Hero" type="com.lk.dragon.db.domain.Hero" />
+	<typeAlias alias="DropRate" type="com.lk.dragon.db.domain.DropRate" />
+	<typeAlias alias="SystemReward" type="com.lk.dragon.db.domain.SystemReward" />
+
+
+
+
+	<!-- =====================【新增不可叠合类道具】============================ -->
+	<insert id="addRoleProps" parameterClass="RoleProps">
+		<selectKey resultClass="java.lang.Long" keyProperty="role_props_id">
+			SELECT
+			ROLE_PROPS_SEQ.NEXTVAL AS role_props_id FROM DUAL
+		</selectKey>   
+	    <![CDATA[INSERT INTO role_props_tab(role_props_id,role_id,props_id,remain_count,props_count,is_bind)VALUES(#role_props_id#,#role_id#,#props_id#,(SELECT props_use_counts FROM game_props_tab WHERE props_id = #props_id#),#props_count#,0)]]>
+	</insert>
+
+	<!-- =====================【查询角色道具列表】============================ -->
+	<select id="selectRolePropsByRoleId" parameterClass="java.lang.Long"
+		resultClass="RoleProps">
+	    <![CDATA[SELECT t.role_props_id,(SELECT props_type FROM game_props_tab t2 WHERE t2.props_id = t.props_id) AS props_type FROM sod.role_props_tab t WHERE t.role_id = #role_id# and t.is_equiped=0 and t.props_count>0]]>
+	</select>
+
+	<!-- =====================【查询角色道具详细信息】============================ -->
+	<select id="selectRolePropsDetailById" parameterClass="java.util.Map"
+		resultClass="RoleProps" remapResults="true">
+	    <![CDATA[ select   t1.role_props_id,
+					       t1.props_id,
+					       t1.props_count,
+					       t2.props_type       as props_type,
+					       t2.props_name       as props_name,
+					       t2.props_icon       as props_icon,
+					       t2.props_comment    as props_comment,
+					       t2.props_repurchase as props_repurchase,
+					       t2.quality as quality
+		          ]]>
+		<!-- 装备类道具 -->
+		<isNotEmpty property="isEquip" prepend=",">
+		     <![CDATA[       
+					   t4.equip_location as equip_location,
+				       
+				       t4.command_lev as command_lev,
+				       t4.inc_property as inc_property,
+				       (select wmsys.wm_concat('{"props_id":' || t.props_id ||
+				                               ',"gem_name":"' || t.gem_name ||
+				                               '","gem_icon":"' || t.icon ||
+				                               '","gem_comment":"' || t.gem_comment ||
+				                               '","gem_type":' || t.buff_type ||
+				                               ',"gem_lev":' || t.gem_equaitly ||
+				                               ',"buf_value":' || t.gem_buff ||
+				                               ',"rela_id":' || t1.rela_id || '}')
+				          from sod.gem_tab t
+				          join sod.equip_gem_tab t1
+				            on t.props_id = t1.props_id
+				         where t1.role_props_id = #role_props_id#) as gems
+		     ]]>
+		</isNotEmpty>
+		<!-- 宝石类道具 -->
+		<isNotEmpty property="isGem" prepend=",">
+           <![CDATA[
+	            	 t3.gem_equaitly as gem_equaitly,
+			   		 t3.gem_buff as buff_value,
+			   		 t3.buff_type as buff_type
+            ]]>
+		</isNotEmpty>
+		<!-- 礼包类道具 -->
+		<isNotEmpty property="isReward" prepend=",">
+           <![CDATA[
+	            	 t5.is_random,
+	            	 t5.rand_cnt
+            ]]>
+		</isNotEmpty>
+		
+		 <![CDATA[ ,t1.is_bind, t1.is_equiped FROM role_props_tab t1 join sod.game_props_tab t2 on t2.props_id = t1.props_id ]]>
+		 <isNotEmpty property="isEquip" prepend=" ">
+		     <![CDATA[
+		         join sod.role_props_equpropety_tab t4  on t1.role_props_id = t4.role_props_id 
+		     ]]>
+		</isNotEmpty>
+		<isNotEmpty property="isGem" prepend=" ">
+		     <![CDATA[
+		         join sod.gem_tab t3 on t1.props_id = t3.props_id 
+		     ]]>
+		</isNotEmpty>
+		<isNotEmpty property="isReward" prepend=" ">
+		     <![CDATA[
+		         join sod.sys_reward_tab t5 on t1.props_id = t5.props_id 
+		     ]]>
+		</isNotEmpty>
+		   <![CDATA[ WHERE t1.role_props_id=#role_props_id#]]>
+	</select>
+	
+	<!-- =====================【获取道具包裹信息】============================ -->
+	<select id="getRolePropsInfo" parameterClass="java.lang.String"
+		resultClass="RoleProps">
+	    <![CDATA[SELECT    t.role_props_id,
+					       t.role_id,
+					       t.props_id,
+					       t.props_count,
+					       t.is_bind,
+					       t.is_equiped,
+					       (select t1.props_type
+					          from sod.game_props_tab t1
+					         where t1.props_id = t.props_id) props_type
+					  FROM role_props_tab t WHERE t.props_count > 0 and $condition$
+	  ]]>
+	</select>
+
+	<!-- =====================【道具数量】============================ -->
+	<select id="getPropsCount" parameterClass="java.lang.Long"
+		resultClass="java.lang.Integer">
+	    <![CDATA[SELECT props_count FROM role_props_tab WHERE role_props_id = #role_props_id# AND is_bind = 0]]>
+	</select>
+
+	<!-- =====================【更新道具数量】============================ -->
+	<update id="updatePropsCount" parameterClass="RoleProps">
+		<![CDATA[UPDATE role_props_tab SET props_count = #props_count# WHERE role_props_id = #role_props_id#]]>
+	</update>
+
+	<!-- =====================【更新道具数量V2】============================ -->
+	<update id="plSubPropsCount" parameterClass="java.util.Map">
+		<![CDATA[UPDATE role_props_tab SET props_count =props_count $operator$ #props_count_vo# WHERE role_props_id = #role_props_id#]]>
+	</update>
+	<!-- =====================【查询指定道具信息】============================ -->
+	<select id="getPropsByPropsId" parameterClass="java.util.Map" resultClass="RoleProps">
+		<![CDATA[select t.props_count,t.role_props_id from sod.role_props_tab t where t.role_id = #role_id# and t.props_id = #props_id# and t.props_count > 0 ]]>
+	</select>
+	<!-- =====================【道具用尽或销毁 删除数据】============================ -->
+	<delete id="deleteProps" parameterClass="java.lang.Long">
+	    <![CDATA[DELETE FROM role_props_tab WHERE role_props_id = #role_props_id#]]>
+	</delete>
+
+	<!-- =====================【绑定角色物品】============================ -->
+	<update id="bindProps" parameterClass="java.lang.Long">
+	    <![CDATA[UPDATE role_props_tab SET is_bind=1 WHERE role_props_id = #role_props_id#]]>
+	</update>
+
+	<!-- =====================【NPC物品掉落机率基数】============================ -->
+	<select id="getNpcDropRateMax" parameterClass="java.lang.Integer" resultClass="java.lang.Integer">
+	    <![CDATA[select t.random_max from sod.drop_rate_tab t where t.npc_id = #npc_id# and rownum <= 1]]>
+	</select>
+	
+	<!-- =====================【NPC物品掉落信息】============================ -->
+	<select id="getNpcDropInfo" parameterClass="DropRate" resultClass="RoleProps">
+	    <![CDATA[SELECT t.props_id,t.props_name,t.props_type,t.props_icon from sod.game_props_tab t join sod.drop_rate_tab t1 on t.props_id = t1.props_id where t1.npc_id = #npc_id# and t1.random_beg<= #rate# and t1.random_end > #rate#]]>
+	</select>
+	
+
+		
+	<!-- =====================【装备最初属性】============================ -->
+	<select id="getEquipBaseInfo" parameterClass="java.lang.Integer" resultClass="Equip">
+	    <![CDATA[select t.inc_property,t.command_lev,t.quality,t.equip_location from sod.equip_tab t where t.props_id = #props_id#]]>
+	</select>
+	
+	<!-- =====================【调用Oracle函数插入数据：道具进入包裹】============================ -->
+	<parameterMap class="java.util.Map" id="callAddRolePropsParams">
+
+		<parameter property="res" jdbcType="INTEGER" javaType="java.lang.Integer"
+			mode="OUT" />
+		<parameter property="role_id" jdbcType="INTEGER" javaType="java.lang.Long"
+			mode="IN" />
+		<parameter property="props_id" jdbcType="INTEGER" javaType="java.lang.Integer"
+			mode="IN" />
+		<parameter property="props_count" jdbcType="INTEGER" javaType="java.lang.Integer" mode="IN" />
+		<parameter property="extra_info" jdbcType="VARCHAR2" javaType="java.lang.String" mode="IN" />
+
+	</parameterMap>
+	<procedure id="callAddRoleProps" parameterMap="callAddRolePropsParams">
+	    <![CDATA[{? = call add_role_props_fun(?,?,?,?)} ]]>
+	</procedure>
+
+
+
+    <!-- ****************************************************【英雄装备模块】************************************************ -->
+    
+	<!-- =====================【检验英雄基本属性】============================ -->
+	<select id="checkHeroBasePro" parameterClass="java.lang.Long"
+		resultClass="Hero">
+	    <![CDATA[SELECT t.physique,t.mentality,t.hero_power,t.endurance,t.agility FROM sod.hero_tab t WHERE t.hero_id = #hero_id#]]>
+	</select>
+
+
+	<!-- =====================【确认招募：角色-英雄关联】============================ -->
+	<insert id="hireNewHero" parameterClass="java.util.Map">
+		<selectKey resultClass="java.lang.Long" keyProperty="role_hero_id">
+			SELECT
+			ROLE_HERO_SEQ.NEXTVAL AS role_hero_id FROM DUAL
+		</selectKey>   
+	    <![CDATA[insert into sod.role_hero_tab(role_hero_id,role_id,physique,mentality,hero_power,endurance,agility,physic_attack,physic_defence,magic_attack,magic_defence,hp, mp,speed,distance_attack,distance_move,quality,hero_name,speed_inmap,max_hp,max_mp,city_id,revive_time,now_cityid,icon, race,sex,hero_type,sht_icon)
+										  select #role_hero_id#,
+										         #role_id#,
+										         t2.physique,
+										         t2.mentality,
+										         t2.hero_power,
+										         t2.endurance,
+										         t2.agility,
+										         0,
+										         0,
+										         0,
+										         0,
+										         t2.hp,
+										         t2.mp,
+										         0,
+										         t2.distance_attack,
+										         t2.distance_move,
+										         t2.quality,
+										         t2.hero_name,
+										         t2.speed_inmap,
+										         0,
+										         0,
+										         t2.city_id,
+										         null,
+										         t2.city_id,
+										         t2.icon,
+										         t2.race,
+										         t2.sex,
+										         t2.hero_type,
+										         t2.sht_icon
+										    from hero_tab t2
+										   where t2.hero_id = #hero_id#]]>
+	</insert>
+
+	<!-- =====================【获取当前城市可招募英雄】============================ -->
+	<select id="getHeroCanHired" parameterClass="java.lang.Long"
+		resultClass="Hero">
+	    <![CDATA[select t.hero_name,
+	    				t.hero_id,
+				       t.icon,
+				       t.sht_icon,
+				       t.physique,
+				       t.mentality,
+				       t.hero_power,
+				       t.endurance,
+				       t.agility,
+				       t.quality,
+				       t.hero_type
+				  from sod.hero_tab t
+				 where t.city_id = #city_id# and t.is_hired = 0 order by t.hero_id ]]>
+	</select>
+
+	<!-- =====================【调用Oracle存储过程:使用道具刷新当日酒馆英雄】============================ -->
+	<parameterMap class="java.util.Map" id="callFlushHiredHerosParams">
+		<parameter property="p_city_id" jdbcType="INTEGER" javaType="java.lang.Long"
+			mode="IN" />
+		<parameter property="p_flag" jdbcType="INTEGER" javaType="java.lang.Integer"
+			mode="IN" />
+		<parameter property="p_race" jdbcType="INTEGER" javaType="java.lang.Integer"
+			mode="IN" />
+	</parameterMap>
+	<procedure id="callFlushHiredHeros" parameterMap="callFlushHiredHerosParams">
+	    <![CDATA[{call sod.hero_refresh_pro(?,?,?)} ]]>
+	</procedure>
+
+
+	<!-- =====================【获取 招募英雄属性】============================ -->
+	<select id="getHeroBaseProperties" parameterClass="java.lang.String"
+		resultClass="Hero">
+	    <![CDATA[SELECT physique,mentality,hero_power,endurance,agility,physic_attack,physic_defence,magic_attack,magic_defence,hp,mp,speed,distance_attack,distance_move,quality,hero_name,speed_inmap,hero_type FROM hero_tab t WHERE $condition$]]>
+	</select>
+
+	<!-- =====================【更改英雄招募标志】============================ -->
+	<update id="updateHireFlag" parameterClass="java.lang.Long">
+	    <![CDATA[UPDATE sod.hero_tab t SET t.is_hired = 1 WHERE t.hero_id = #hero_id#]]>
+	</update>
+
+	<!-- =====================【更改英雄属性V】============================ -->
+	<update id="updateHerosStatus" parameterClass="java.lang.String">
+	    <![CDATA[UPDATE role_hero_tab t SET $condition$]]>
+	</update>
+
+	<!-- =====================【更改英雄属性:战斗属性提供增量即可】============================ -->
+	<update id="updateHeroProperty" parameterClass="java.util.Map">
+		<![CDATA[UPDATE role_hero_tab SET role_hero_id=#role_hero_id#]]>
+		<isNotEmpty prepend="," property="physique">
+			<![CDATA[physique=physique $operator$ #physique#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="rank_score">
+			<![CDATA[rank_score=#rank_score#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="general_id">
+			<![CDATA[general_id=#general_id#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="command">
+			<![CDATA[command=#command#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="is_free">
+			<![CDATA[is_free=#is_free#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="hero_up_exp">
+			<![CDATA[hero_up_exp=#hero_up_exp#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="hero_exp">
+			<![CDATA[hero_exp=#hero_exp#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="hero_lev">
+			<![CDATA[hero_lev=#hero_lev#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="hero_name">
+			<![CDATA[hero_name=#hero_name#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="quality">
+			<![CDATA[quality=#quality#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="distance_move">
+			<![CDATA[distance_move=distance_move $operator$ #distance_move#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="distance_attack">
+			<![CDATA[distance_attack=distance_attack $operator$ #distance_attack#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="speed">
+			<![CDATA[speed=speed  $operator$ #speed#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="speed_inmap">
+			<![CDATA[speed_inmap=speed_inmap  $operator$ #speed_inmap#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="mp">
+			<![CDATA[mp=mp $operator$ #mp#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="hp">
+			<![CDATA[hp=hp  $operator$ #hp#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="max_mp">
+			<![CDATA[max_mp=max_mp $operator$ #max_mp#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="max_hp">
+			<![CDATA[max_hp=max_hp  $operator$ #max_hp#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="magic_defence">
+			<![CDATA[magic_defence=magic_defence $operator$ #magic_defence#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="mentality">
+			<![CDATA[mentality=mentality  $operator$  #mentality#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="hero_power">
+			<![CDATA[hero_power=hero_power  $operator$ #hero_power#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="endurance">
+			<![CDATA[endurance=endurance  $operator$ #endurance#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="agility">
+			<![CDATA[agility=agility $operator$ #agility#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="physic_attack">
+			<![CDATA[physic_attack=physic_attack  $operator$ #physic_attack#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="physic_defence">
+			<![CDATA[physic_defence=physic_defence $operator$ #physic_defence#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="magic_attack">
+			<![CDATA[magic_attack=magic_attack $operator$ #magic_attack#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="city_id">
+			<![CDATA[city_id=#city_id#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="now_cityid">
+			<![CDATA[now_cityid=#now_cityid#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="revive_time">
+			<![CDATA[revive_time=to_char(sysdate+numtodsinterval(#revive_time#,'second'),'yyyy-mm-dd hh24:mi:ss')]]>
+		</isNotEmpty>
+		
+		<![CDATA[WHERE role_hero_id=#role_hero_id#]]>
+	</update>
+
+	<!-- =====================【装备穿卸】============================ -->
+	<update id="onOffEquip" parameterClass="java.util.Map">
+	    <![CDATA[UPDATE role_props_tab SET is_equiped = #is_equiped#,is_bind = 1 WHERE role_props_id = #role_props_id#]]>
+	</update>
+
+	<!-- =====================【英雄穿戴装备：新增hero_equip_tab数据】============================ -->
+	<insert id="heroUseEquip" parameterClass="HeroEquip">  
+	    <![CDATA[INSERT INTO hero_equip_tab(role_hero_id,role_props_id)VALUES(#role_hero_id#,#role_props_id#)]]>
+	</insert>
+
+
+	<!-- =====================【英雄卸下装备：删除hero_equip_tab数据】============================ -->
+	<delete id="heroOffEquip" parameterClass="java.lang.Long">
+	    <![CDATA[DELETE FROM hero_equip_tab WHERE role_props_id = #role_props_id#]]>
+	</delete>
+
+	<!-- =====================【获取 英雄已装备道具基本信息】============================ -->
+	<select id="getHeroOnEquipBase" parameterClass="java.lang.Long" resultClass="RolePropsEquipPro">
+	    <![CDATA[select t.role_props_id from sod.hero_equip_tab t where t.role_hero_id = #role_hero_id#]]>
+		<!--
+			select  t.role_props_id,t.equip_location from sod.role_props_equpropety_tab t
+					 where t.role_props_id in (select t1.role_props_id
+					                             from sod.hero_equip_tab t1
+					                            where t1.role_hero_id = #role_hero_id#)
+		-->
+	</select>
+
+	
+	
+	<!-- =====================【丢弃回收装备：删除装备属性数据】============================ -->
+	<delete id="deleteEquipValue" parameterClass="java.lang.Long">
+	    <![CDATA[DELETE FROM role_props_equpropety_tab t WHERE t.role_props_id = #role_props_id#]]>
+	</delete>
+
+	<!-- =====================【获取装备(含宝石)属性】============================ -->
+	<select id="getEquipProperty" parameterClass="java.lang.Long"
+		resultClass="RolePropsEquipPro">
+	   	 <![CDATA[SELECT t.inc_property FROM sod.role_props_equpropety_tab t WHERE t.role_props_id = #role_props_id#]]>
+	</select>
+
+	<!-- =====================【修改装备(含宝石)属性】============================ -->
+	<update id="updateEquipProperty" parameterClass="java.util.Map">
+	    <![CDATA[UPDATE role_props_equpropety_tab t SET t.inc_property = #inc_property# WHERE t.role_props_id = #role_props_id#]]>
+	</update>
+
+	<!-- =====================【装备镶嵌宝石：增加中间表数据】============================ -->
+	<insert id="addEquipGem" parameterClass="EquipGem">
+		<selectKey resultClass="java.lang.Long" keyProperty="rela_id">
+			SELECT
+			EQUIP_GEM_SEQ.NEXTVAL AS rela_id FROM DUAL
+		</selectKey>   
+	    <![CDATA[INSERT INTO equip_gem_tab(rela_id,role_props_id,props_id)VALUES(#rela_id#,#role_props_id#,#props_id#)]]>
+	</insert>
+
+	<!-- =====================【取下宝石、删除装备 删除装备-宝石中间表数据】============================ -->
+	<delete id="deleteEquipGem" parameterClass="java.lang.String">
+	    <![CDATA[DELETE FROM equip_gem_tab t WHERE $condition$]]>
+	</delete>
+
+	<!-- =====================【获取指定等级、类型的宝石】============================ -->
+	<select id="getGemByLevType" parameterClass="Gem" resultClass="Gem">
+	   	 <![CDATA[SELECT props_id,gem_buff FROM gem_tab WHERE gem_equaitly = #gem_equaitly# AND buff_type = #buff_type#]]>
+	</select>
+
+	<!-- =====================【获取宝石信息】============================ -->
+	<select id="getGemInfo" parameterClass="java.lang.String"
+		resultClass="Gem">
+	   	 <![CDATA[SELECT props_id,gem_buff,gem_equaitly,buff_type FROM gem_tab WHERE $condition$]]>
+	</select>
+
+	<!-- =====================【获取宝石道具信息】============================ -->
+	<select id="getGemPropsInfo" parameterClass="java.lang.String"
+		resultClass="Gem">
+	   	 <![CDATA[SELECT props_id,gem_buff,gem_equaitly,buff_type,
+	   	 				(SELECT t2.props_name FROM game_props_tab t2 WHERE t2.props_id = t.props_id) AS gem_name,
+	   	 				(SELECT t2.props_icon FROM game_props_tab t2 WHERE t2.props_id = t.props_id) AS icon FROM gem_tab t WHERE $condition$]]>
+	</select>
+
+	<!-- =====================【获取英雄信息ByCondition】============================ -->
+	<select id="getHeroPropertyByCondition" parameterClass="java.lang.String"
+		resultClass="RoleHero">
+	   	 <![CDATA[SELECT   t.role_hero_id,
+					       t.physique,
+					       t.mentality,
+					       t.hero_power,
+					       t.endurance,
+					       t.agility,
+					       t.physic_attack,
+					       t.physic_defence,
+					       t.magic_attack,
+					       t.magic_defence,
+					       t.hp,
+					       t.mp,
+					       t.speed,
+					       t.distance_attack,
+					       t.distance_move,
+					       t.quality,
+					       t.hero_name,
+					       t.hero_lev,
+					       t.hero_exp,
+					       t.hero_up_exp,
+					       t.is_free,
+					       t.command,
+					       t.speed_inmap,
+					       t.max_hp,
+					       t.max_mp,
+					       t.can_assign_point,
+					       t.hero_type,
+					       t.race,
+					       t.icon,
+					       t.sht_icon,
+					       t.city_id,
+					       t.now_cityid,
+					       t.role_id,
+					       t.sex,
+					       (SELECT floor(to_number(to_date(t.revive_time, 'yyyy-mm-dd hh24:mi:ss') -
+					                               sysdate) * 24 * 60 * 60)
+					          FROM dual) revLstSec,
+						       to_char(sysdate, 'yyyy-mm-dd hh24:mi:ss') AS now_db
+						  FROM role_hero_tab t WHERE $condition$]]>
+	</select>
+
+	<!-- =====================【获取英雄信息】============================ -->
+	<select id="getHeroPropertyByRoleHeroId" parameterClass="java.lang.Long"
+		resultClass="RoleHero">
+	   	 <![CDATA[SELECT   t.role_hero_id,
+					       t.physique,
+					       t.mentality,
+					       t.hero_power,
+					       t.endurance,
+					       t.agility,
+					       t.physic_attack,
+					       t.physic_defence,
+					       t.magic_attack,
+					       t.magic_defence,
+					       t.hp,
+					       t.mp,
+					       t.speed,
+					       t.distance_attack,
+					       t.distance_move,
+					       t.max_hp,
+					       t.max_mp
+						  FROM role_hero_tab t WHERE t.role_hero_id = #role_hero_id#]]>
+	</select>
+	
+	
+	<!-- =====================【创建队列前 检查英雄状态 】============================ -->
+	<select id="checkHerosStatus" parameterClass="java.lang.String" resultClass="RoleHero">
+	   	 <![CDATA[SELECT t.hp,t.role_hero_id,t.is_free FROM role_hero_tab t $condition$]]>
+	</select>
+	<!-- =====================【流放英雄】============================ -->
+	<delete id="deleteRoleHero" parameterClass="java.lang.String">
+	    <![CDATA[DELETE FROM role_hero_tab t WHERE $condition$]]>
+	</delete>
+
+	<!-- =====================【英雄进入训练室】============================ -->
+	<insert id="addHeroTrain" parameterClass="RoleHero">
+	    <![CDATA[INSERT INTO sod.hero_train_tab(city_id,role_hero_id,begin_time,end_time,pre_exp)VALUES(#city_id#,#role_hero_id#,to_char(sysdate,'yyyy-mm-dd hh24:mi:ss'),to_char(sysdate+numtodsinterval(#train_time#,'second'),'yyyy-mm-dd hh24:mi:ss'),#pre_exp#)]]>
+	</insert>
+
+	<!-- =====================【当前城邦训练中英雄】============================ -->
+	<select id="getHeroTrainInfo" parameterClass="java.lang.String"
+		resultClass="RoleHero" >
+	 <![CDATA[SELECT t.role_hero_id,t.pre_exp,
+	 				(select t1.hero_name from sod.role_hero_tab t1 where t1.role_hero_id = t.role_hero_id)hero_name, 
+	 				(select (sysdate - to_date(t.begin_time,'yyyy-mm-dd hh24:mi:ss'))* 24*60*60  from dual)already_train,
+	 				(select (to_date(t.end_time,'yyyy-mm-dd hh24:mi:ss') - sysdate)* 24*60*60  from dual)train_last_time
+	 				FROM hero_train_tab t where $condition$]]>
+	 	<!-- <dynamic prepend="where">
+	 	    <isNotEmpty property="city_id" prepend="and">
+	 	        <![CDATA[ t.city_id = #city_id#]]>
+	 	    </isNotEmpty>
+	 	    <isNotEmpty property="role_hero_id" prepend="and">
+	 	        <![CDATA[ t.role_hero_id = #role_hero_id#]]>
+	 	    </isNotEmpty>
+	 	</dynamic> -->
+	</select>
+	
+	<!-- =====================【英雄中断训练】============================ -->
+	<delete id="cancelHeroTrain" parameterClass="java.lang.String">
+	    <![CDATA[DELETE FROM sod.hero_train_tab t WHERE $condition$]]>
+	</delete>
+	
+	
+
+<!-- ****************************************************【系统奖励模块】************************************************ -->
+	<!-- [获取系统奖励详细信息]-->
+	<select id="getSysRewardDetail" parameterClass="java.util.Map" resultClass="RoleProps">
+	    <![CDATA[SELECT t1.props_id,t1.PROPS_NAME,t1.PROPS_ICON,t1.PROPS_TYPE,t.PROPS_COUNT from sod.REWARD_DETAIL_TAB t join sod.game_props_tab t1 ON t.PROPS_ID = t1.props_id WHERE t.reward_id = #reward_id# AND t.RANDOM_BEG <= #rand# AND t.RANDOM_END >=#rand#]]>
+	</select>
+	
+	<!-- [获取系统宝箱信息]-->
+<!-- 	<select id="getSysReward" parameterClass="java.util.Map" resultClass="RoleProps">
+	    <![CDATA[SELECT t1.props_id,t1.PROPS_NAME,t1.PROPS_ICON,t1.PROPS_TYPE,t.PROPS_COUNT from sod.REWARD_DETAIL_TAB t join sod.game_props_tab t1 ON t.PROPS_ID = t1.props_id WHERE t.reward_id = #reward_id# AND t.RANDOM_BEG <= #rand_beg# AND t.RANDOM_END >= #rand_end#]]>
+	</select> -->
+</sqlMap>

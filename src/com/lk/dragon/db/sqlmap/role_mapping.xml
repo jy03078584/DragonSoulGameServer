@@ -1,0 +1,416 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="roleMap">
+	<typeAlias alias="Role" type="com.lk.dragon.db.domain.Role" />
+
+	
+	<resultMap id ="roleInfoMap" class="Role">
+		<result property="role_id" column="role_id" />
+		<result property="race" column="race" />
+		<result property="role_name" column="role_name" />
+		<result property="duke" column="duke" />
+		<result property="lev" column="lev" />
+		<result property="exp" column="exp" />
+		<result property="up_exp" column="up_exp" />
+		<result property="sex" column="sex" />
+		<result property="icon" column="icon" />
+		<result property="sht_ico" column="sht_ico" />
+		<result property="gold" column="gold" />
+		<result property="food" column="food" />
+		<result property="wood" column="wood" />
+		<result property="user_id" column="user_id" />
+		<result property="stone" column="stone" />
+		<result property="yield_food" column="yield_food" />
+		<result property="yield_wood" column="yield_wood" />
+		<result property="yield_stone" column="yield_stone" />
+		<result property="diamon" column="diamon" />
+		<result property="city" column="city" />
+		<result property="eat" column="eat" />
+		<result property="is_online" column="is_online" />
+		<result property="bags" column="bags" />
+		<result property="battle_count" column="battle_count" />
+		<result property="sum_login_count" column="sum_login_count" />
+		<result property="last_logout_time" column="last_logout_time" />
+		<result property="last_login_time" column="last_login_time" />
+		<result property="factionid" column="factionid" />
+		<result property="buff_type" column="buff_type" />
+		<result property="buffs" column="{target_id = role_id,buff_type = buff_type" select="buffMap.getBuffInfo" />
+	</resultMap>
+
+	<!-- =====================【新建游戏角色信息】============================ -->
+	<insert id="addRole" parameterClass="Role">
+		<selectKey resultClass="java.lang.Long" keyProperty="role_id">
+			SELECT
+			ROLE_SEQ.NEXTVAL AS role_id FROM DUAL
+		</selectKey> 
+	    <![CDATA[INSERT INTO role_tab(role_id,user_id,role_name,race,sex,icon,sht_ico,last_login_time)
+	    		 VALUES(#role_id#,#user_id#,#role_name#,#race#,#sex#,#icon:VARCHAR#,#sht_ico:VARCHAR#,to_char(sysdate,'yyyy-mm-dd hh24:mi:ss'))]]>
+		<!-- <selectKey resultClass="java.lang.Long" keyProperty="role_id"> <![CDATA[SELECT 
+			LAST_INSERT_ID()]]> </selectKey> -->
+	</insert>
+
+
+	<!-- =====================【查询游戏角色信息】============================ -->
+	<select id="selectRoles" parameterClass="Role" resultClass="Role">
+	   	 <![CDATA[SELECT count(1) as isExit, role_id from role_tab t]]>
+		<dynamic prepend="where">
+			<isNotEmpty property="user_id" prepend="and">
+	       				 <![CDATA[t.user_id=#user_id#]]>
+			</isNotEmpty>
+			<isNotEmpty property="role_name" prepend="and">
+	       				 <![CDATA[t.role_name=#role_name#]]>
+			</isNotEmpty>
+		</dynamic>
+	</select>
+
+	<!-- =====================【检测当前用户已创建角色数】============================ -->
+	<select id="checkRolesCountByUserId" parameterClass="Role"
+		resultClass="java.lang.Integer">
+	    <![CDATA[SELECT count(*) FROM role_tab WHERE user_id = #user_id#]]>
+	</select>
+
+	<!-- =====================【查看角色升级经验表】============================ -->
+	<select id="getRoleUpExp" resultClass="Role">
+	    <![CDATA[select t.lev, t.up_exp from sod.role_gain_tab t]]>
+	</select>
+	<!-- =====================【根据角色ID查询游戏角色资源信息】============================ -->
+	<select id="selectRolesByRoleId" parameterClass="java.lang.Long"
+		resultClass="Role">
+		<![CDATA[SELECT t.role_id,t.role_name,t.gold,t.food,t.wood,t.lev,t.exp,t.up_exp,t.stone,t.yield_food,t.yield_wood,t.yield_stone,t.diamon,t.city,t.eat,t.bags,t.battle_count FROM role_tab t WHERE role_id=#role_id#]]>
+	</select>
+	<!-- =====================【根据角色名查询游戏角色信息】============================ -->
+	<select id="selectRolesByRoleName" parameterClass="Role"
+		resultClass="Role">
+		<![CDATA[SELECT role_id,user_id,race,role_name,duke,lev,exp,up_exp,sex,icon,sht_ico,gold,food,wood,stone,yield_food,yield_wood,yield_stone,diamon,city,eat,bags FROM role_tab WHERE role_name=#role_name#]]>
+	</select>
+	<!-- =====================【根据用户ID查询游戏角色信息】============================ -->
+	<select id="selectRolesByUserId" parameterClass="java.lang.Long" resultMap="roleInfoMap">
+		<![CDATA[SELECT t.role_id,
+				        t.race,
+				        t.role_name,
+				        t.duke,
+				        t.lev,
+				        t.exp,
+				        t.up_exp,
+				        t.sex,
+				        t.icon,
+				        t.sht_ico,
+				        t.gold,
+				        t.user_id,
+				        t.food,
+				        t.wood,
+				        t.stone,
+				        t.yield_food,
+				        t.yield_wood,
+				        t.yield_stone,
+				        t.diamon,
+				        t.city,
+				        t.eat,
+				        t.bags,
+				        t.is_online,
+				        t.battle_count,
+				        t.sum_login_count,
+				        t.last_login_time,
+				        t.last_logout_time,
+				       nvl((select t1.faction_id from sod.role_faction_tab t1 where t.role_id = t1.role_id), -1) factionid,
+				       0 buff_type
+				  FROM role_tab t
+				 WHERE user_id = #user_id#]]>
+	</select>
+
+	<!-- =====================【根据角色名查询角色ID】============================ -->
+	<select id="selectRoleIdByName" parameterClass="java.lang.String"
+		resultClass="java.lang.Long">
+	    <![CDATA[SELECT role_id FROM role_tab WHERE role_name = #role_name#]]>
+	</select>
+
+	<!-- =====================【删除游戏角色信息】============================ -->
+	<delete id="deleteRole" parameterClass="Role">
+		<![CDATA[DELETE FROM role_tab WHERE role_id=#role_id#]]>
+	</delete>
+
+
+	<!-- =====================【更新游戏角色数据信息】============================ -->
+	<update id="updateRoleInfo" parameterClass="Role">
+		<![CDATA[UPDATE role_tab SET role_id=#role_id#]]>
+		<isNotEmpty prepend="," property="race">
+			<![CDATA[race=#race#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="duke">
+			<![CDATA[duke=#duke#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="lev">
+			<![CDATA[lev=#lev#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="exp">
+			<![CDATA[exp=#exp#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="up_exp">
+			<![CDATA[up_exp=#up_exp#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="food">
+			<![CDATA[food=#food#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="wood">
+			<![CDATA[wood=#wood#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="stone">
+			<![CDATA[stone=#stone#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="gold">
+			<![CDATA[gold=#gold#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="yield_food">
+			<![CDATA[yield_food=#yield_food#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="yield_wood">
+			<![CDATA[yield_wood=#yield_wood#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="yield_stone">
+			<![CDATA[yield_stone=#yield_stone#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="diamon">
+			<![CDATA[diamon=#diamon#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="city">
+			<![CDATA[city=#city#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="eat">
+			<![CDATA[eat=#eat#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="bags">
+			<![CDATA[bags=#bags#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="battle_count">
+			<![CDATA[battle_count=#battle_count#]]>
+		</isNotEmpty>
+		<![CDATA[ WHERE role_id=#role_id#]]>
+	</update>
+
+
+
+
+	<!-- =====================【更新游戏角色数据信息V2】============================ -->
+	<update id="sumPluRoleInfo" parameterClass="java.util.Map">
+		<![CDATA[UPDATE role_tab SET role_id=#role_id#]]>
+
+		<isNotEmpty prepend="," property="duke">
+			<![CDATA[duke = duke $operator$ #duke#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="lev">
+			<![CDATA[lev = lev $operator$ #lev#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="exp">
+			<![CDATA[exp = exp $operator$ #exp#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="up_exp">
+			<![CDATA[up_exp = up_exp $operator$ #up_exp#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="food">
+			<![CDATA[food = food $operator$ #food#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="wood">
+			<![CDATA[wood = wood $operator$ #wood#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="stone">
+			<![CDATA[stone = stone $operator$ #stone#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="gold">
+			<![CDATA[gold  = gold $operator$ #gold#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="yield_food">
+			<![CDATA[yield_food  = yield_food $operator$ #yield_food#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="yield_wood">
+			<![CDATA[yield_wood = yield_wood $operator$ #yield_wood#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="yield_stone">
+			<![CDATA[yield_stone = yield_stone $operator$ #yield_stone#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="diamon">
+			<![CDATA[diamon = diamon $operator$ #diamon#]]>
+		</isNotEmpty>
+
+		<isNotEmpty prepend="," property="city">
+			<![CDATA[city  = city $operator$ #city#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="eat">
+			<![CDATA[eat  = eat $operator$ #eat#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="bags">
+			<![CDATA[bags  = bags $operator$ #bags#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="battle_count">
+			<![CDATA[battle_count= battle_count $operator$ #battle_count#]]>
+		</isNotEmpty>
+		<![CDATA[ WHERE role_id=#role_id#]]>
+	</update>
+
+	<!-- =====================【更改角色名】============================ -->
+	<update id="updateRoleName" parameterClass="Role">
+		<![CDATA[UPDATE role_tab SET role_name=#role_name# WHERE role_id=#role_id#]]>
+	</update>
+
+	<!-- =====================【更改角色头像】============================ -->
+	<update id="changeRoleIcon" parameterClass="Role">
+		<![CDATA[UPDATE role_tab SET icon=#icon#, sht_ico = #sht_ico# WHERE role_id=#role_id#]]>
+	</update>
+
+	<!-- =====================【更改角色在线状态】============================ -->
+	<update id="updateOnLineStatus" parameterClass="Role">
+		<![CDATA[UPDATE role_tab t SET t.is_online = #is_online#]]>
+		<isNotEmpty prepend="," property="last_login_time">
+			    <![CDATA[t.last_login_time  = to_char(sysdate,'yyyy-mm-dd hh24:mi:ss')]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="last_logout_time">
+			    <![CDATA[t.last_logout_time  = to_char(sysdate,'yyyy-mm-dd hh24:mi:ss')]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="sum_login_count">
+			    <![CDATA[t.sum_login_count  = #sum_login_count#]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="," property="chests">
+			    <![CDATA[t.chests  = #chests#]]>
+		</isNotEmpty>
+		<![CDATA[ WHERE t.role_id = #role_id#]]>
+	</update>
+
+	<!-- =====================【获取角色登录状态相关信息】============================ -->
+	<select id="selectRoleOnLineStatus" parameterClass="java.lang.Long"
+		resultClass="Role">
+	    <![CDATA[SELECT t.sum_login_count,
+	    				t.LAST_LOGIN_TIME,
+				        t.SUM_LOGIN_COUNT,
+				        t.chests,t.is_online,t.last_login_time,t.last_logout_time FROM role_tab t WHERE t.role_id = #role_id#]]>
+	</select>
+
+
+	<!-- =====================【重置角色在线状态】============================ -->
+	<update id="resetRoleOnlineStatus">
+		<![CDATA[UPDATE role_tab t SET t.is_online = 0]]>
+	</update>
+
+
+	<!-- =====================【查看角色签到领奖情况】============================ -->
+	<select id="selectChest" parameterClass="java.lang.Long"
+		resultClass="Role">
+		<![CDATA[select t.chests from sod.role_tab t where t.role_id=#role_id#]]>
+	</select>
+	<!-- =====================【更新角色签到领奖情况】============================ -->
+	<update id="updateChest" parameterClass="Role">
+		<![CDATA[UPDATE role_tab t SET t.chests = #chests#]]>
+		<isNotEmpty prepend="," property="sum_login_count">
+			<![CDATA[sum_login_count=#sum_login_count#]]>
+		</isNotEmpty>
+		<![CDATA[where t.role_id=#role_id#]]>
+	</update>
+	
+	
+	
+	<!-- =====================【初始化角色缓存器】============================ -->
+	<select id="initRoleCache" resultMap="roleInfoMap">
+		<![CDATA[
+		select *  from (select t.role_id,
+				               t.race,
+				               t.role_name,
+				               t.duke,
+				               t.lev,
+				               t.exp,
+				               t.user_id,
+				               t.up_exp,
+				               t.sex,
+				               t.icon,
+				               t.sht_ico,
+				               t.gold,
+				               t.food,
+				               t.wood,
+				               t.stone,
+				               t.yield_food,
+				               t.yield_wood,
+				               t.yield_stone,
+				               t.diamon,
+				               t.city,
+				               t.eat,
+				               t.bags,
+				               t.is_online,
+				               t.battle_count,
+				               t.sum_login_count,
+				               t.last_login_time,
+				               t.last_logout_time,
+				               nvl((select t1.faction_id
+				                     from sod.role_faction_tab t1
+				                    where t.role_id = t1.role_id),
+				                   -1) factionid,
+				               0 buff_type
+				          from role_tab t
+				         order by t.last_logout_time desc)
+				 where rownum < 500
+		]]>
+	</select>
+
+	
+	
+	<!-- =====================【获取当前在线玩家 放入缓存】============================ -->
+	<select id="refreshRoleCache" resultMap="roleInfoMap">
+					<![CDATA[select   t.role_id,
+								       t.race,
+								       t.role_name,
+								       t.duke,
+								       t.lev,
+								       t.exp,
+								       t.up_exp,
+								       t.sex,
+								       t.icon,
+								       t.user_id,
+								       t.sht_ico,
+								       t.gold,
+								       t.food,
+								       t.wood,
+								       t.stone,
+								       t.yield_food,
+								       t.yield_wood,
+								       t.yield_stone,
+								       t.diamon,
+								       t.city,
+								       t.eat,
+								       t.bags,
+								       t.is_online,
+								       t.battle_count,
+								       t.sum_login_count,
+								       t.last_login_time,
+								       t.last_logout_time,
+								       nvl((select t1.faction_id
+								             from sod.role_faction_tab t1
+								            where t.role_id = t1.role_id),
+								           -1) factionid,
+								       0 buff_type
+								  from role_tab t where t.is_online = 1]]>
+	</select>
+
+</sqlMap>

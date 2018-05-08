@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="toolsMap">
+	<typeAlias alias="Tools" type="com.lk.dragon.db.domain.Tools" />
+
+	
+	<!-- =====================【新增Log数据】============================ -->
+	<insert id="addNewLogInfo" parameterClass="Tools">
+	    <![CDATA[INSERT INTO sod.OPERAT_LOG_TAB(role_id,model_name,operat_detail,log_time,partitionkey,operat_res)VALUES(#role_id#,#model_name#,#operat_detail#,to_char(sysdate, 'yyyy-mm-dd hh24:mi:ss'),#partitionkey#,#operat_res#)]]>
+	</insert>
+	 
+	
+</sqlMap>

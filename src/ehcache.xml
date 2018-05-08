@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:noNamespaceSchemaLocation="http://ehcache.org/ehcache.xsd" 
+		 updateCheck="false"
+		 >
+	
+    <!-- 战斗队列缓存信息-->
+	<cache name="warTeamCache" 
+	       eternal="true" 
+	       maxElementsInMemory="400"
+		   overflowToDisk="false" 
+		   diskPersistent="false" 
+		   timeToIdleSeconds="0"
+		   timeToLiveSeconds="0" 
+		   memoryStoreEvictionPolicy="LRU" 
+		   >
+		   <searchable>
+		       <searchAttribute name="war_type" expression="value.getWar_type()"/>
+		       <searchAttribute name="end_time" expression="value.getEnd_time()"/>
+		   </searchable>
+	</cache> 
+	<!-- 角色信息 -->
+	<cache name="roleCache" 
+	       eternal="false" 
+	       maxElementsInMemory="1000"
+		   overflowToDisk="false" 
+		   diskPersistent="false" 
+		   timeToIdleSeconds="120"
+		   timeToLiveSeconds="180" 
+		   memoryStoreEvictionPolicy="LRU" 
+		   >
+		   <searchable>
+		       <searchAttribute name="user_id" expression="value.getUser_id()"/>
+		   </searchable>
+	</cache>
+	
+	<!-- 建筑升级增益数值 -->
+	<cache name="buildLevUpCache" 
+	       eternal="true" 
+	       maxElementsInMemory="100"
+		   overflowToDisk="false" 
+		   diskPersistent="false" 
+		   timeToIdleSeconds="0"
+		   timeToLiveSeconds="0" 
+		   memoryStoreEvictionPolicy="LRU" 
+		   >
+		   <searchable keys="false" values="false">
+		       <searchAttribute name="lev" expression="value.getLev()"/>
+		       <searchAttribute name="build_type" expression="value.getBuild_type()"/>
+		       <searchAttribute name="val" expression="value.getVal()"/>
+		   </searchable>
+	</cache>
+	
+	<!-- 兵种信息 -->
+	<cache name="armInfoCache" 
+	       eternal="true" 
+	       maxElementsInMemory="100"
+		   overflowToDisk="false" 
+		   diskPersistent="false" 
+		   timeToIdleSeconds="0"
+		   timeToLiveSeconds="0" 
+		   memoryStoreEvictionPolicy="LRU" 
+		   >
+		    <searchable>
+		       <searchAttribute name="race" expression="value.getRace()"/>
+		       <searchAttribute name="hire_build" expression="value.getHire_build()"/>
+		   </searchable>
+	</cache>
+	
+	<!-- 排行榜信息 -->
+	<cache name="rankInfoCache" 
+	       eternal="true" 
+	       maxElementsInMemory="5"
+		   overflowToDisk="false" 
+		   diskPersistent="false" 
+		   timeToIdleSeconds="0"
+		   timeToLiveSeconds="0" 
+		   memoryStoreEvictionPolicy="LRU" 
+		   >
+	</cache>
+	
+</ehcache>   

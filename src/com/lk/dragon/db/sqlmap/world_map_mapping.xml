@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="worldMap">
+	<typeAlias alias="WorldMap" type="com.lk.dragon.db.domain.WorldMap" />
+	<typeAlias alias="City" type="com.lk.dragon.db.domain.City" />
+	<typeAlias alias="WildSrc" type="com.lk.dragon.db.domain.WildSrc" />
+	<typeAlias alias="ArmsDeploy" type="com.lk.dragon.db.domain.ArmsDeploy" />
+	
+
+	<!-- =====================【查询世界坐标点】============================ -->
+	<select id="getWorldMapPoints" parameterClass="WorldMap" resultClass="WorldMap">
+	    <![CDATA[
+	    				select p.map_id,
+						       p.site_x,
+						       p.site_y,
+						       p.item,
+						       p.type,
+						       (case p.item
+						         when 1 then
+						          (select c.role_id
+						             from sod.city_tab c
+						            where c.site_x = p.site_x
+						              and c.site_y = p.site_y)
+						         when 2 then
+						          (select s.owner_id
+						             from sod.wild_src_tab s
+						            where s.tag_x = p.site_x
+						              and s.tag_y = p.site_y)
+						         else
+						          0
+						       end) ownerId,
+						       (case p.item
+						         when 1 then
+						          (select c.name
+						             from sod.city_tab c
+						            where c.site_x = p.site_x
+						              and c.site_y = p.site_y)
+						         when 2 then
+						          (select r.role_name
+						             from sod.role_tab r
+						            where r.role_id = (select s.owner_id
+						                                 from sod.wild_src_tab s
+						                                where s.tag_x = p.site_x
+						                                  and s.tag_y = p.site_y))
+						         else
+						          'N'
+						       end) ownerName
+						  from (select t.map_id, t.site_x, t.site_y, t.item, t.type
+						          from sod.map_tab t
+						         where (t.site_x >= #min_x# and t.site_x <= #max_x#)
+						           and (t.site_y >= #min_y# and t.site_y <= #max_y#)) p
+	    ]]>
+	</select>
+	
+	
+	<!-- =====================【查询随机点信息】============================ -->
+	<select id="getRandomWildInfo" parameterClass="java.util.Map" resultClass="WorldMap">
+	    <![CDATA[
+			select t.map_id,t.type,t.item
+			  from sod.map_tab t
+			 where t.site_x = #site_x# and t.site_y = #site_y#
+	    ]]>
+	</select>
+	
+
+	<!-- =====================【根据坐标查询当前城镇信息】============================ -->
+	<select id="selectCityInfo" resultClass="City" parameterClass="City">
+	    <![CDATA[			   
+			select p.*,
+		       (select q.faction_name
+		          from sod.faction_tab q
+		         where q.faction_id = (select f.faction_id
+		                                 from sod.role_faction_tab f
+		                                where f.role_id = p.role_id)) faction_name
+				  from (select t.name,
+				  			   t.city_id,
+				               t.loyal,
+				               t.yield_food,
+				               t.yield_stone,
+				               t.yield_wood,
+				               t.role_id,
+				               t.home,
+				               t.race,
+				               nvl(t.eat, 0) eat,
+				               t1.role_name as role_name,
+				               t1.icon as role_icon,
+				               t1.lev as role_lev
+				          from sod.city_tab t
+				          join sod.role_tab t1
+				            on t.role_id = t1.role_id
+				         where t.site_x = #site_x#
+				           and t.site_y = #site_y#) p
+	    ]]>
+	</select>
+	
+	
+	<!-- =====================【查询资源点信息】============================ -->
+	<select id="getWildSrcInfo" parameterClass="java.lang.String" resultClass="WildSrc">
+	    <![CDATA[
+			select t.owner_id,
+				   t.tag_x,
+				   t.tag_y,
+			       t2.role_name,
+			       t.arm_info,
+			       t.owner_type,
+			       t.src_type,
+			       t.src_leve
+			  from sod.wild_src_tab t
+			  join sod.role_tab t2
+			    on t.owner_id = t2.role_id $condition$
+	    ]]>
+	</select>
+	
+	<!-- =====================【变更资源点信息】============================ -->
+	<update id="updateWildSrcInfo" parameterClass="WildSrc">
+	    <![CDATA[UPDATE sod.wild_src_tab t SET t.owner_type = #owner_type#,t.owner_id = #owner_id#,t.arm_info = #arm_info# WHERE t.tag_x = #tag_x# and t.tag_y = #tag_y#]]>
+	</update>
+</sqlMap>

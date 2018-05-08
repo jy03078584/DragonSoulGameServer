@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE sqlMapConfig PUBLIC "-//iBATIS.com//DTD SQL Map Config 2.0//EN" "http://www.ibatis.com/dtd/sql-map-config-2.dtd">
+
+<sqlMapConfig>
+
+    <!-- Enable Ibatis NameSpace -->
+    <settings useStatementNamespaces="true"/>
+    
+    <!-- Ibatis Mapper -->
+    <sqlMap resource="com/lk/dragon/db/sqlmap/role_mapping.xml"/>
+    <sqlMap resource="com/lk/dragon/db/sqlmap/role_props_mapping.xml"/>
+    <sqlMap resource="com/lk/dragon/db/sqlmap/game_props_mapping.xml"/>
+    <sqlMap resource="com/lk/dragon/db/sqlmap/market_props_mapping.xml"/>
+    <sqlMap resource="com/lk/dragon/db/sqlmap/relation_mapping.xml"/>
+    <sqlMap resource="com/lk/dragon/db/sqlmap/auction_mapping.xml"/>
+	<sqlMap resource="com/lk/dragon/db/sqlmap/city_build_mapping.xml"/>
+	<sqlMap resource="com/lk/dragon/db/sqlmap/mail_mapping.xml"/>
+	<sqlMap resource="com/lk/dragon/db/sqlmap/ranks_mapping.xml"/>
+	<sqlMap resource="com/lk/dragon/db/sqlmap/faction_mapping.xml"/>
+	<sqlMap resource="com/lk/dragon/db/sqlmap/war_mapping.xml"/>
+	<sqlMap resource="com/lk/dragon/db/sqlmap/world_map_mapping.xml"/>
+	<sqlMap resource="com/lk/dragon/db/sqlmap/tools_mapping.xml"/>
+	<sqlMap resource="com/lk/dragon/db/sqlmap/invite_mapping.xml"/>
+	<sqlMap resource="com/lk/dragon/db/sqlmap/mission_mapping.xml"/>
+	<sqlMap resource="com/lk/dragon/db/sqlmap/buff_mapping.xml"/>
+    
+</sqlMapConfig>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//iBATIS.com//DTD SQL Map 2.0//EN"
+ "http://www.ibatis.com/dtd/sql-map-2.dtd">
+
+
+<sqlMap namespace="marketPropsMap">
+	<typeAlias alias="MarketProps" type="com.lk.dragon.db.domain.MarketProps" />
+
+	<!-- =====================【获取商城道具列表】============================ -->
+	<select id="getAllMarketPropsList" parameterClass="java.util.Map" resultClass="MarketProps">
+	    <![CDATA[SELECT t1.market_props_id,
+	    				t1.props_id,
+	    				t1.privce_diamon,
+	    				t1.privce_gold,
+	    			    t3.props_name,
+	    			    t3.props_comment as props_desc,
+	    			    t3.props_icon,
+	    			    t3.props_type 
+	    		FROM sod.market_props_tab t1 join sod.game_props_tab t3 on t1.props_id = t3.props_id ]]>
+	    <dynamic prepend="WHERE">
+	        <!-- 按道具名称查询 -->
+	        <isNotEmpty prepend="and" property="props_name_sql">
+	            <![CDATA[t1.props_id in (SELECT t2.props_id FROM game_props_tab t2 WHERE t2.props_name LIKE '%'||#props_name_sql#||'%')]]>
+	        </isNotEmpty>
+	        
+	        <!-- 按道具类型查询 -->
+	        <isNotEmpty prepend="and" property="props_type_sql">
+	            <![CDATA[t1.props_id in (SELECT t2.props_id FROM game_props_tab t2 WHERE t2.props_type = #props_type_sql#)]]>
+	        </isNotEmpty>
+	    </dynamic>
+	    ORDER BY market_weight
+	</select>
+	
+</sqlMap>
