@@ -3,8 +3,7 @@
  * @Title: DropRate.java 
  * @Package com.lk.dragon.db.domain 
  * @Description: TODO 
- * @author XiangMZh   
- * @date 2015-4-7 下午5:36:35 
+ * @author XiangMZh 
  * @version V1.0   
  */
 package com.lk.dragon.db.domain;
