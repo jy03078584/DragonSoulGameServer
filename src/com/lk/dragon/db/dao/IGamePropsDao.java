@@ -1,5 +1,5 @@
  /** 
- * Copyright ? 2014,成都乐控科技 
+ *
  * @Title: IGamePropsDao.java 
  * @Package com.lk.dragon.db.dao 
  * @Description: 道具Dao 接口 

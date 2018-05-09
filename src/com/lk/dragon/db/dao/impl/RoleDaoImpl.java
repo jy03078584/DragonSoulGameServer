@@ -1,5 +1,5 @@
  /** 
- * Copyright ? 2014,成都乐控科技 
+ *
  * @Title: RoleDaoImpl.java 
  * @Package com.lk.dragon.db.dao.impl 
  * @Description: 游戏角色实现类

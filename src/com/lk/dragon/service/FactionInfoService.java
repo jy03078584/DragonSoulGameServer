@@ -1,5 +1,5 @@
 /** 
- * Copyright ? 2014,成都乐控科技 
+ *
  * @Title: FactionInfoService.java 
  * @Package com.lk.dragon.service 
  * @Description: 帮会模块

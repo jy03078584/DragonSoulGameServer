@@ -1,6 +1,6 @@
 /**
- * Copyright ? 2014，成都乐控
- * All Rights Reserved.
+ *
+ *
  * 文件名称： Message.java
  * 摘 要：
  * 作 者：hex
@@ -15,8 +15,8 @@ import java.util.Date;
 
 /**
  * 客户端发送到服务端的消息实体对象
- * Copyright ? 2014，成都乐控
- * All Rights Reserved.
+ *
+ *
  * 文件名称： Message.java
  * 摘 要：
  * 作 者：hex

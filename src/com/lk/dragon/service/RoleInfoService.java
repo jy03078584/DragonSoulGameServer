@@ -1,5 +1,5 @@
 /** 
- * Copyright ? 2014,成都乐控科技 
+ *
  * @Title: RoleInfoService.java 
  * @Package com.lk.dragon.service 
  * @Description: 角色基本信息业务层

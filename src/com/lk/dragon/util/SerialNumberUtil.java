@@ -1,6 +1,6 @@
 /**
- * Copyright ? 2015，成都乐控
- * All Rights Reserved.
+ *
+ *
  * 文件名称： SerialNumberUtil.java
  * 摘 要：
  * 作 者：hex

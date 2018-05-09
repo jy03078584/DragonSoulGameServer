@@ -1,5 +1,5 @@
  /** 
- * Copyright ? 2014,成都乐控科技 
+ *
  * @Title: RoleHero.java 
  * @Package com.lk.dragon.db.domain 
  * @Description: TODO 

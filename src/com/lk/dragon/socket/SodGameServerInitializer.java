@@ -1,5 +1,5 @@
  /** 
- * Copyright ? 2014,成都乐控科技 
+ *
  * @Title: SodGameServerInitializer.java 
  * @Package com.lk.dragon.socket 
  * @Description: TODO 

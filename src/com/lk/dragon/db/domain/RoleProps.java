@@ -1,5 +1,5 @@
  /** 
- * Copyright ? 2014,成都乐控科技 
+ *
  * @Title: RoleProps.java 
  * @Package com.lk.dragon.db.domain 
  * @Description: 用户-道具中间表映射

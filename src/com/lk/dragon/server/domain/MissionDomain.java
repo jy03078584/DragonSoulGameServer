@@ -1,5 +1,5 @@
  /** 
- * Copyright ? 2014,成都乐控科技 
+ *
  * @Title: MissionDomain.java 
  * @Package com.lk.dragon.server.domain 
  * @Description: TODO 

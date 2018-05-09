@@ -1,5 +1,5 @@
 /** 
- * Copyright ? 2014,成都乐控科技 
+ *
  * @Title: RolePropsInfoService.java 
  * @Package com.lk.dragon.service 
  * @Description: 角色-道具交互信息业务 

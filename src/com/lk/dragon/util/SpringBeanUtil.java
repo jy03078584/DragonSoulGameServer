@@ -1,5 +1,5 @@
  /** 
- * Copyright ? 2014,成都乐控科技 
+ *
  * @Title: SpringBeanUtil.java 
  * @Package com.lk.dragon.util 
  * @Description: TODO 

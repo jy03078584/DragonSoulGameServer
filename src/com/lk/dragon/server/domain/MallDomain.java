@@ -1,6 +1,6 @@
 /**
- * Copyright ? 2014，成都乐控
- * All Rights Reserved.
+ *
+ *
  * 文件名称： MallDomain.java
  * 摘 要：
  * 作 者：hex

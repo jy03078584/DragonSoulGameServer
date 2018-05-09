@@ -1,5 +1,5 @@
  /** 
- * Copyright ? 2014,成都乐控科技 
+ *
  * @Title: DateTimeUtil.java 
  * @Package com.lk.dragon.util 
  * @Description: 日期时间工具类

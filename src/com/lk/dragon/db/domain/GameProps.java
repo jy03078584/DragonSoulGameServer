@@ -1,5 +1,5 @@
  /** 
- * Copyright ? 2014,成都乐控科技 
+ *
  * @Title: GameProps.java 
  * @Package com.lk.dragon.db.domain 
  * @Description: 道具表domain映射 
