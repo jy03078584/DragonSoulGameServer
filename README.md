@@ -1,1 +1,1 @@
-A Simple Netty Game Server 
+A Netty Demo For Game Server 
